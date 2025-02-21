@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ebe87602add43f145a56d9526f15879c, type: 3}
+  m_Name: AllAssets
+  m_EditorClassIdentifier: 
+  allEnemies:
+  - {fileID: 11400000, guid: 79b360ca0a4c6034bb4a6262b31d49f2, type: 2}
+  - {fileID: 11400000, guid: b74b7ae25c47ee0468d6c06ca5d2d6de, type: 2}
+  - {fileID: 11400000, guid: 5a688721ad97ef543b4522829d530914, type: 2}
+  allLevelRarities:
+  - {fileID: 11400000, guid: 1c369caa1fa7e0b4db52a92dd465e588, type: 2}
+  - {fileID: 11400000, guid: bcf67b94b44a78b49b127a2750e69993, type: 2}
+  - {fileID: 11400000, guid: 45407eada7847d74a931980069dc3fa1, type: 2}
+  - {fileID: 11400000, guid: 10748e7cfc97cb94ea45f23b52816fba, type: 2}
+  - {fileID: 11400000, guid: 4abc36f639c9138488d52b73f83f016d, type: 2}
+  - {fileID: 11400000, guid: 6c5e50d1e21b3434aa03c2c1b77a926f, type: 2}
+  - {fileID: 11400000, guid: 506395e70dcda7041b27cf727bcf5204, type: 2}
+  - {fileID: 11400000, guid: c088258f293c87744a0f555ebecc5340, type: 2}
+  - {fileID: 11400000, guid: 907c81ded90dd2b43b42a7206552a057, type: 2}
+  - {fileID: 11400000, guid: 2d9ee74a104b311499a3f5e83971250e, type: 2}
+  - {fileID: 11400000, guid: 755c702b4acda794a9c6051221f0a765, type: 2}
+  allItems:
+  - {fileID: 11400000, guid: 6ab0024e3635ef74493944b82417bfc1, type: 2}
+  - {fileID: 11400000, guid: ff725b864a25e7c489350a1817881db6, type: 2}
+  - {fileID: 11400000, guid: e4c0ee83ad4ebf44ca92b6385f7420a8, type: 2}
+  - {fileID: 11400000, guid: 9dd85c4b61ddb4249a7933233d9e4ebf, type: 2}
+  allBestiaryPages:
+  - {fileID: 11400000, guid: 25011b462bba162419059b41064c6cb8, type: 2}
+  - {fileID: 11400000, guid: f38ddd7a9fe537143a123509795e0815, type: 2}
+  allKeywords:
+  - {fileID: 11400000, guid: 80324d6cd07d31d4ba8e1e6fdafc16a4, type: 2}
+  - {fileID: 11400000, guid: 74cc647ef457fbb40ab6dcba23a44642, type: 2}
+  allNetworkPrefabs:
+  - {fileID: 4658087837117228661, guid: 0d6a0e1d5e289354486874d4a956579b, type: 3}
+  - {fileID: 2719390617343005816, guid: 83ccbb4a560d82542917730741a3a10a, type: 3}
+  - {fileID: 7813872649683874507, guid: 629674d4ee689fe4e9defbb59ac82113, type: 3}
+  - {fileID: 9092689995592862025, guid: d8a13d97bc59415409f4ed9ae3664288, type: 3}
+  - {fileID: 5032310939461611957, guid: 9ebf8da4141e8d34ba192923b1262193, type: 3}
+  - {fileID: 2548855011705182603, guid: 3e4b1addde07a984286f6809d58620c6, type: 3}
+  - {fileID: 7813872649683874507, guid: f86adc782073a3d4eb8304320740aa6f, type: 3}
+  - {fileID: 581559271652206603, guid: 2b85669a7dafe224ab93d22b8283a7ce, type: 3}

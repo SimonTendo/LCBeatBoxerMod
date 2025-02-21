@@ -1,0 +1,301 @@
+ManifestFileVersion: 0
+CRC: 1110950364
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: fc9c47cdf123dc16c65c9d7e9b34fe40
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: fb831a4fc7d40593c2ffb9e2f694df98
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: fc9c47cdf123dc16c65c9d7e9b34fe40
+HashAppended: 0
+ClassTypes:
+- Class: 1
+  Script: {instanceID: 0}
+- Class: 4
+  Script: {instanceID: 0}
+- Class: 21
+  Script: {instanceID: 0}
+- Class: 23
+  Script: {instanceID: 0}
+- Class: 28
+  Script: {instanceID: 0}
+- Class: 33
+  Script: {instanceID: 0}
+- Class: 43
+  Script: {instanceID: 0}
+- Class: 48
+  Script: {instanceID: 0}
+- Class: 54
+  Script: {instanceID: 0}
+- Class: 65
+  Script: {instanceID: 0}
+- Class: 74
+  Script: {instanceID: 0}
+- Class: 82
+  Script: {instanceID: 0}
+- Class: 83
+  Script: {instanceID: 0}
+- Class: 91
+  Script: {instanceID: 0}
+- Class: 95
+  Script: {instanceID: 0}
+- Class: 108
+  Script: {instanceID: 0}
+- Class: 114
+  Script: {fileID: 11500000, guid: 70b342d8ce5c2fd48b8fa3147d48d1d1, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: b2d8418b0b9634b1892b0268dd9c2743, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: aeda7bfbf984f2a4da5ab4b8967b115d, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 3f3f888fd8241ab419496e4d408d85d3, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 65d3fcb39dd67306e9bb17a603308070, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 7a68c43fe1f2a47cfa234b5eeaa98012, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: d0d4ad87e956f9544b97c56ab4cb9f3d, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 04f75356a7e9c978bddc7d568e58a50b, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: e47a20a28c3465c9e978f827ff3840ff, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: ebe87602add43f145a56d9526f15879c, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 5193949fba2f63b4bba10634315d27c1, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: c30496d6ae6d6f907456e10a94e01ec6, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 507293d35d7a13e5b9ca9bb60e082e11, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: c5a15fd86cfe211173eb68d9b08fcff2, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: f2736580e5eef6b458ab5c77ad483dd5, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: ecee879e915baf84ab6849bb8ba7c3a5, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 3c36d0a92cbb1f26a39169ef0eae393a, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 158b9a17b9c2973459b98a1f2a63fdbe, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 6d7127b8f98ca8ec9896b384a71d39a2, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 4f0d688f3b4b7994ba0e8dc003402ee7, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: b004330a5cc998348b9edf39cad75c35, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 0e80ae96b3eb9177eea5c8f9dadbcda1, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: d08969b58629c2ff37781cc3524d7d00, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 44a10306ac2e06e4399efe56b06cf9c1, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 3bba590b53f642646b911070cde9a46c, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: fff0960ef4ea6e04eac66b4a7fd2189d, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: d3cecf05b78b173605122a700874719c, type: 3}
+- Class: 114
+  Script: {fileID: -1363570433, guid: 7c8edb5cdc06db24483de470b35102a3, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: e4342ed3ca475314582a4403033f7529, type: 3}
+- Class: 115
+  Script: {instanceID: 0}
+- Class: 136
+  Script: {instanceID: 0}
+- Class: 137
+  Script: {instanceID: 0}
+- Class: 195
+  Script: {instanceID: 0}
+- Class: 241
+  Script: {instanceID: 0}
+- Class: 243
+  Script: {instanceID: 0}
+- Class: 245
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers:
+- AssemblyName: Assembly-CSharp
+  ClassName: AISearchRoutine
+- AssemblyName: Assembly-CSharp
+  ClassName: Battery
+- AssemblyName: Assembly-CSharp
+  ClassName: EnemyBehaviourState
+- AssemblyName: Assembly-CSharp
+  ClassName: InteractEvent
+- AssemblyName: Assembly-CSharp
+  ClassName: InteractEventFloat
+- AssemblyName: Assembly-CSharp
+  ClassName: NavSizeLimit
+- AssemblyName: Assembly-CSharp
+  ClassName: SpawnableEnemyWithRarity
+- AssemblyName: Unity.Animation.Rigging
+  ClassName: UnityEngine.Animations.Rigging.RigEffectorData
+- AssemblyName: Unity.Animation.Rigging
+  ClassName: UnityEngine.Animations.Rigging.RigEffectorData/Style
+- AssemblyName: Unity.Animation.Rigging
+  ClassName: UnityEngine.Animations.Rigging.RigLayer
+- AssemblyName: Unity.Animation.Rigging
+  ClassName: UnityEngine.Animations.Rigging.TwoBoneIKConstraintData
+- AssemblyName: Unity.RenderPipelines.HighDefinition.Runtime
+  ClassName: UnityEngine.Rendering.HighDefinition.BoolScalableSettingValue
+- AssemblyName: Unity.RenderPipelines.HighDefinition.Runtime
+  ClassName: UnityEngine.Rendering.HighDefinition.IntScalableSettingValue
+- AssemblyName: UnityEngine.CoreModule
+  ClassName: UnityEngine.Events.ArgumentCache
+- AssemblyName: UnityEngine.CoreModule
+  ClassName: UnityEngine.Events.PersistentCallGroup
+- AssemblyName: UnityEngine.CoreModule
+  ClassName: UnityEngine.Events.PersistentListenerMode
+- AssemblyName: UnityEngine.CoreModule
+  ClassName: UnityEngine.Events.UnityEvent
+Assets:
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/BoxerGrabItem.anim
+- Assets/LCBeatBoxerMod/ScriptableObjects/LevelWithRarities/LWR7Dine.asset
+- Assets/LCBeatBoxerMod/ScriptableObjects/AttackSequence/Test/TestAttackAnimAmbush.asset
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/BoxerHunchedWalk.anim
+- Assets/LCBeatBoxerMod/Audio/AudioClips/PlaceholderFootsteps.ogg
+- Assets/LCBeatBoxerMod/ScriptableObjects/EnemyType/BoxerEnemyType.asset
+- Assets/LCBeatBoxerMod/Materials/DefaultYellow.mat
+- Assets/LCBeatBoxerMod/Materials/DefaultFlesh.mat
+- Assets/LCBeatBoxerMod/Materials/BeatBetaMat.mat
+- Assets/LCBeatBoxerMod/Meshes/BoxerNestTree.blend
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/BoxerVulnerable.anim
+- Assets/LCBeatBoxerMod/Prefabs/EnemyAI/BeatEnemy.prefab
+- Assets/LCBeatBoxerMod/ScriptableObjects/TerminalKeyword/BoxerKeyword.asset
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/BeatIdle.anim
+- Assets/LCBeatBoxerMod/Animation/AnimatorControllers/TestInitialGorillaTryOut.controller
+- Assets/LCBeatBoxerMod/Audio/AudioClips/PlaceholderFootstepSingleA.ogg
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/BoxerUprightIdle.anim
+- Assets/LCBeatBoxerMod/Meshes/BeatItem Try-Out.blend
+- Assets/LCBeatBoxerMod/Audio/AudioClips/FreesoundAudienceHubbubC.ogg
+- Assets/LCBeatBoxerMod/Audio/AudioClips/FreesoundAudienceHubbubA.ogg
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/TestEnemyHeadbuttRecover.anim
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/TestEnemyHeadbuttMiss.anim
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/BeatExitVent.anim
+- Assets/LCBeatBoxerMod/Audio/AudioClips/PlaceholderReel.ogg
+- Assets/LCBeatBoxerMod/Meshes/Initial Gorilla Try-Out.blend
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/BoxerSitIdle.anim
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/TestEnemyPunchMiss.anim
+- Assets/LCBeatBoxerMod/Audio/AudioClips/FreesoundBoxingBellDing.ogg
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/BoxerAttackUppercut.anim
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/TestInitialGorillaWalk.anim
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/BoxerSpawn.anim
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/BeatWalkUpright.anim
+- Assets/LCBeatBoxerMod/Audio/AudioClips/GoldenGloveExtendStop.ogg
+- Assets/LCBeatBoxerMod/Materials/DefaultGrey.mat
+- Assets/LCBeatBoxerMod/Audio/AudioClips/FreesoundAudienceCheering.ogg
+- Assets/LCBeatBoxerMod/ScriptableObjects/Item/EnemyLureItem.asset
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/TimpaniToyFootsteps.anim
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/BeatAmbush.anim
+- Assets/LCBeatBoxerMod/ScriptableObjects/AttackSequence/Test/TestAttackAnimSequence.asset
+- Assets/LCBeatBoxerMod/ScriptableObjects/LevelWithRarities/LWR6Rend.asset
+- Assets/LCBeatBoxerMod/Materials/TimpaniToyTeethMat.mat
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/BeatAttack.anim
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/TimpaniToyAlarm.anim
+- Assets/LCBeatBoxerMod/Textures/Texture2Ds/TimpaniToyEye.jpg
+- Assets/LCBeatBoxerMod/Audio/AudioClips/FreesoundAudienceRoar.ogg
+- Assets/LCBeatBoxerMod/ScriptableObjects/LevelWithRarities/LWR9Titan.asset
+- Assets/LCBeatBoxerMod/Materials/DefaultRed.mat
+- Assets/LCBeatBoxerMod/Audio/AudioClips/PlaceholderFootstepSingleF.ogg
+- Assets/LCBeatBoxerMod/Audio/AudioClips/PlaceholderStun.ogg
+- Assets/LCBeatBoxerMod/ScriptableObjects/LevelWithRarities/LWR8Offense.asset
+- Assets/LCBeatBoxerMod/Textures/Texture2Ds/BeatEnemyBetaTex.jpg
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/BoxerAttackLowSweep.anim
+- Assets/LCBeatBoxerMod/ScriptableObjects/TerminalKeyword/BeatKeyword.asset
+- Assets/LCBeatBoxerMod/Audio/AudioClips/FreesoundAudienceHubbubD.ogg
+- Assets/LCBeatBoxerMod/Prefabs/EnemyAI/Test/TestEnemy.prefab
+- Assets/LCBeatBoxerMod/ScriptableObjects/AttackSequence/BoxerDefaultAttackSequence.asset
+- Assets/LCBeatBoxerMod/Audio/AudioClips/FreesoundSpotlight.ogg
+- Assets/LCBeatBoxerMod/Audio/AudioClips/PlaceholderIntimidate.ogg
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/BoxerWaveGoodbye.anim
+- Assets/LCBeatBoxerMod/Meshes/BeatBoxer v0.1.0 Functional.blend
+- Assets/LCBeatBoxerMod/Animation/AnimatorControllers/BoxerItemAnimator.controller
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/TestEnemyLowSweep.anim
+- Assets/LCBeatBoxerMod/Meshes/GoldfatherClock - Bird.blend
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/TestEnemyLowSweepMiss.anim
+- Assets/LCBeatBoxerMod/Meshes/BeatBoxer v0.1.5.blend
+- Assets/LCBeatBoxerMod/ScriptableObjects/LevelWithRarities/LWR0Experimentation.asset
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/BoxingBellDing.anim
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/BoxerDie.anim
+- Assets/LCBeatBoxerMod/Prefabs/EnemyAI/BoxerEnemy.prefab
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/TestEnemyHeadbutt.anim
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/TestEnemyGiveShovel.anim
+- Assets/LCBeatBoxerMod/Audio/AudioClips/PlaceholderFootstepSingleE.ogg
+- Assets/LCBeatBoxerMod/Audio/AudioClips/FreesoundAudienceEcstatic.ogg
+- Assets/LCBeatBoxerMod/Animation/AnimatorControllers/BeatAnimator.controller
+- Assets/LCBeatBoxerMod/Materials/DefaultWhite.mat
+- Assets/LCBeatBoxerMod/Audio/AudioClips/FreesoundAudienceHubbubB.ogg
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/BeatWalkHunched.anim
+- Assets/LCBeatBoxerMod/Audio/AudioClips/GoldenGloveStun.ogg
+- Assets/LCBeatBoxerMod/ScriptableObjects/LevelWithRarities/LWR2Vow.asset
+- Assets/LCBeatBoxerMod/ScriptableObjects/Item/BeatAudioItem.asset
+- Assets/LCBeatBoxerMod/Audio/AudioClips/FreesoundFootstepSingleA.ogg
+- Assets/LCBeatBoxerMod/Audio/AudioClips/PlaceholderPunch.ogg
+- Assets/LCBeatBoxerMod/Audio/AudioClips/FreesoundFootstepSingleC.ogg
+- Assets/LCBeatBoxerMod/ScriptableObjects/LevelWithRarities/LWR10Artifice.asset
+- Assets/LCBeatBoxerMod/Meshes/BoxerItem.blend
+- Assets/LCBeatBoxerMod/Animation/AnimatorControllers/BoxerAnimator.controller
+- Assets/LCBeatBoxerMod/Materials/DefaultGreen.mat
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/BoxerAttackHighPunch.anim
+- Assets/LCBeatBoxerMod/ScriptableObjects/LevelWithRarities/LWR12Embrion.asset
+- Assets/LCBeatBoxerMod/Meshes/BeatBoxer v0.1.6 Fix Attempt.blend
+- Assets/LCBeatBoxerMod/Audio/AudioClips/FreesoundFootsteps.ogg
+- Assets/LCBeatBoxerMod/Animation/AnimatorControllers/BeatItemAnimator.controller
+- Assets/LCBeatBoxerMod/Audio/AudioClips/PlaceholderBlock.ogg
+- Assets/LCBeatBoxerMod/Materials/DefaultLightBrown.mat
+- Assets/LCBeatBoxerMod/ScriptableObjects/TerminalNode/BoxerFile.asset
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/BoxerGiveShovel.anim
+- Assets/LCBeatBoxerMod/Prefabs/GrabbableObject/EnemyTestLure.prefab
+- Assets/LCBeatBoxerMod/Animation/AnimatorControllers/TestBirdAnimator.controller
+- Assets/LCBeatBoxerMod/Audio/AudioClips/FreesoundFootstepSingleB.ogg
+- Assets/LCBeatBoxerMod/ScriptableObjects/LevelWithRarities/LWR5Adamance.asset
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/BeatAttackStart.anim
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/BoxerUprightWalk.anim
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/TestTwoBoneRightArm.anim
+- Assets/LCBeatBoxerMod/Materials/DefaultDarkBlue.mat
+- Assets/LCBeatBoxerMod/Audio/AudioClips/PlaceholderFootstepSingleD.ogg
+- Assets/LCBeatBoxerMod/ScriptableObjects/LevelWithRarities/LWR4March.asset
+- Assets/LCBeatBoxerMod/Audio/AudioClips/PlaceholderRun.ogg
+- Assets/LCBeatBoxerMod/ScriptableObjects/EnemyType/BeatEnemyType.asset
+- Assets/LCBeatBoxerMod/Audio/AudioClips/PlaceholderFootstepSingleC.ogg
+- Assets/LCBeatBoxerMod/Audio/AudioClips/PlaceholderAlarm.ogg
+- Assets/LCBeatBoxerMod/Prefabs/GrabbableObject/SkinnedMeshTestBird.prefab
+- Assets/LCBeatBoxerMod/ScriptableObjects/AttackSequence/Test/TestAttackAnimSequenceNearDeath.asset
+- Assets/LCBeatBoxerMod/Audio/AudioClips/FreesoundPunchHit.ogg
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/TimpaniToyLooking.anim
+- Assets/LCBeatBoxerMod/Textures/Texture2Ds/TimpaniToyTeeth.jpg
+- Assets/LCBeatBoxerMod/ScriptableObjects/AllAssets.asset
+- Assets/LCBeatBoxerMod/ScriptableObjects/EnemyType/TestEnemyType.asset
+- Assets/LCBeatBoxerMod/Materials/DefaultBrown.mat
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/BoxerAttackStun.anim
+- Assets/LCBeatBoxerMod/ScriptableObjects/LevelWithRarities/LWR1Assurance.asset
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/BoxerHunchedIdle.anim
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/BoxerBlock.anim
+- Assets/LCBeatBoxerMod/Prefabs/GrabbableObject/BeatFakeAudioItem.prefab
+- Assets/LCBeatBoxerMod/ScriptableObjects/Item/TestBirdItem.asset
+- Assets/LCBeatBoxerMod/Textures/Texture2Ds/BoxerEnemyBetaTex.jpg
+- Assets/LCBeatBoxerMod/Audio/AudioClips/GoldenGlovePunch.ogg
+- Assets/LCBeatBoxerMod/Prefabs/BananaTree.prefab
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/TestEnemyIdle.anim
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/TestEnemyPunch.anim
+- Assets/LCBeatBoxerMod/Animation/AnimatorControllers/TestEnemyAnimator.controller
+- Assets/LCBeatBoxerMod/Audio/AudioClips/PlaceholderFootstepSingleB.ogg
+- Assets/LCBeatBoxerMod/Animation/AnimatorControllers/TestTwoBoneIKConstraint.controller
+- Assets/LCBeatBoxerMod/Audio/AudioClips/PlaceholderBell.ogg
+- Assets/LCBeatBoxerMod/Audio/AudioClips/FreesoundReel.ogg
+- Assets/LCBeatBoxerMod/Materials/BoxerBetaMat.mat
+- Assets/LCBeatBoxerMod/Meshes/BeatBoxer v0.1.7 Neck.blend
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/BeatDie.anim
+- Assets/LCBeatBoxerMod/Materials/TimpaniToyEyeMat.mat
+- Assets/LCBeatBoxerMod/Animation/AnimationClips/TestBirdItemGrabLoop.anim
+- Assets/LCBeatBoxerMod/ScriptableObjects/TerminalNode/BeatFile.asset
+- Assets/LCBeatBoxerMod/Prefabs/EnemyAI/Test/TestTwoBoneConstraints.prefab
+- Assets/LCBeatBoxerMod/ScriptableObjects/Item/BoxerBellItem.asset
+- Assets/LCBeatBoxerMod/Prefabs/EnemyNodeLight.prefab
+- Assets/LCBeatBoxerMod/Prefabs/GrabbableObject/BoxerBellItem.prefab
+Dependencies: []

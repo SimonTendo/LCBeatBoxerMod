@@ -1,0 +1,90 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0e80ae96b3eb9177eea5c8f9dadbcda1, type: 3}
+  m_Name: BeatFile
+  m_EditorClassIdentifier: 
+  displayText: 'THE BEAT
+
+
+    Sigurd''s danger level: 25% i justavoid it its sound
+    turns my stomach inside out
+
+
+    Scientific name: TBD
+
+
+    Suspected as the
+    one who orchestated the events that occured at Sirus Ukwezi, the gorilla with
+    stage name "The Beat" has always been known for its higher-than-usual intelligence.
+    Having been taught to read musical scores and play for shows is its most popular
+    display of intelligence among the general public, but even long before its inclusion
+    in the circus'' program, locals living near the tribe it was born in have said
+    that it made for a natural leader, displaying calmness in a way that prevented
+    conflict with other animals through what appears to be mediation.
+
+
+    However,
+    having been taken out of its natural habitat to put on performances purely for
+    its unique physical traits seems to have changed this demeanor, as circus personnel
+    have described it as distant and deceitful, playing tricks on them, as well as
+    stealing caretakers'' tools, some of the circus owner''s antique paraphernalia,
+    and the circus'' transportation devices used to travel between planets. Its these
+    traits that have spread the popular rumor that it deviced the escape in the middle
+    of the show, together with fellow performer "The Boxer".
+
+
+    Ever since, it
+    has been spotted a handful of times, having stowed away in abandoned buildings
+    on planets now void of civilization, in what behavioral experts assume to be
+    an attempt to escape human presence. Few witness accounts exist however, stating
+    that it first charged at whoever was looking at it, before it set up an ambush
+    of sorts, using the stolen antiques from the circus to trick the listener into
+    thinking it is elsewhere than it really is. Subsequently, it appears to become
+    enraged when this ambush is unsuccessful, or when provoked. But despite its naturally
+    far superior strength compared to humans, it lacks the combat skills to properly
+    go on the offense.
+
+
+    Survivors therefore advice, should you run into it yourself,
+    to avoid the general area you hear its iconic footsteps from, to avoid both its
+    charge and its ambush. And they recall that, when attacking, it clumsily tries
+    to set its target up straight so it can swing at the head. Their advice has thus
+    been to stay calm and react fast by quickly making yourself small or staying
+    light enough to keep running away, until you either make enough distance or it
+    tries to go into its next ambush.
+
+
+'
+  terminalEvent: 
+  clearPreviousText: 1
+  maxCharactersToType: 35
+  buyItemIndex: -1
+  buyVehicleIndex: -1
+  isConfirmationNode: 0
+  buyRerouteToMoon: -1
+  displayPlanetInfo: -1
+  shipUnlockableID: -1
+  buyUnlockable: 0
+  returnFromStorage: 0
+  itemCost: 0
+  creatureFileID: -1
+  creatureName: Beat
+  storyLogFileID: -1
+  overrideOptions: 0
+  acceptAnything: 0
+  terminalOptions: []
+  playClip: {fileID: 0}
+  playSyncedClip: -1
+  displayTexture: {fileID: 0}
+  displayVideo: {fileID: 0}
+  loadImageSlowly: 0
+  persistentImage: 0

@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f2736580e5eef6b458ab5c77ad483dd5, type: 3}
+  m_Name: LWR8Offense
+  m_EditorClassIdentifier: 
+  levelID: 8
+  enemiesWithRarities:
+  - enemyType: {fileID: 11400000, guid: 79b360ca0a4c6034bb4a6262b31d49f2, type: 2}
+    rarity: 50
+  - enemyType: {fileID: 11400000, guid: b74b7ae25c47ee0468d6c06ca5d2d6de, type: 2}
+    rarity: 30

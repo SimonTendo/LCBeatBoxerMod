@@ -22,6 +22,7 @@ public class TheBoxerAI : EnemyAI
     private int animState;
     private float headTargetWeight;
     private bool inSpecialAnimationPreVulnerable;
+    private Vector3 specialAnimVelocity;
 
     [Space(3f)]
     [Header("MOVEMENT")]
@@ -175,13 +176,23 @@ public class TheBoxerAI : EnemyAI
         {
             return;
         }
-        if (calculateMovementTimer >= calculateMovementInterval)
+        if (inSpecialAnimation)
+        {
+            updatePositionThreshold = 0.1f;
+            syncMovementSpeed = 0.1f;
+            if (!IsOwner)
+            {
+                transform.position = Vector3.SmoothDamp(transform.position, serverPosition, ref specialAnimVelocity, syncMovementSpeed);
+            }
+        }
+        else if (calculateMovementTimer >= calculateMovementInterval)
         {
             CalculateAnimations();
             calculateMovementTimer = 0;
         }
         else
         {
+            updatePositionThreshold = 1.0f;
             calculateMovementTimer += Time.deltaTime;
         }
         debugEyeForward.transform.position = eye.position + eye.forward * 2;
@@ -1456,38 +1467,38 @@ public class TheBoxerAI : EnemyAI
         AttackAnimationNames nextAttackTrigger = currentAttackSequence.attacks[clampedAttackIndex];
         int thisTriggerIndex = Mathf.Clamp((int)nextAttackTrigger, 0, currentAttackSequence.attacks.Length - 1);
         float nextStunTime = Mathf.Clamp(stunTimePerAttackEnum[thisTriggerIndex % stunTimePerAttackEnum.Length], 0, stunTimePerAttackEnum.Length - 1);
-        SyncAttackAnimation(clampedAttackIndex, nextStunTime);
+        SyncAttackAnimation(clampedAttackIndex, nextStunTime, atPos: transform.position);
     }
 
-    private void SyncAttackAnimation(int ownerAttackIndex, float ownerStunTime, bool sync = true, bool onlySyncParameters = false)
+    private void SyncAttackAnimation(int ownerAttackIndex, float ownerStunTime, bool sync = true, bool onlySyncParameters = false, Vector3 atPos = default)
     {
         if (!IsOwner)
         {
             return;
         }
-        SyncAttackAnimationLocal(ownerAttackIndex, ownerStunTime, onlySyncParameters);
+        SyncAttackAnimationLocal(ownerAttackIndex, ownerStunTime, onlySyncParameters, atPos);
         if (sync)
         {
-            SyncAttackAnimationServerRpc((int)GameNetworkManager.Instance.localPlayerController.playerClientId, ownerAttackIndex, ownerStunTime, onlySyncParameters);
+            SyncAttackAnimationServerRpc((int)GameNetworkManager.Instance.localPlayerController.playerClientId, ownerAttackIndex, ownerStunTime, onlySyncParameters, atPos);
         }
     }
 
     [ServerRpc(RequireOwnership = false)]
-    private void SyncAttackAnimationServerRpc(int sentBy, int ownerAttackIndex, float ownerStunTime, bool onlySyncParameters)
+    private void SyncAttackAnimationServerRpc(int sentBy, int ownerAttackIndex, float ownerStunTime, bool onlySyncParameters, Vector3 atPos)
     {
-        SyncAttackAnimationClientRpc(sentBy, ownerAttackIndex, ownerStunTime, onlySyncParameters);
+        SyncAttackAnimationClientRpc(sentBy, ownerAttackIndex, ownerStunTime, onlySyncParameters, atPos);
     }
 
     [ClientRpc]
-    private void SyncAttackAnimationClientRpc(int sentBy, int ownerAttackIndex, float ownerStunTime, bool onlySyncParameters)
+    private void SyncAttackAnimationClientRpc(int sentBy, int ownerAttackIndex, float ownerStunTime, bool onlySyncParameters, Vector3 atPos)
     {
         if (sentBy != (int)GameNetworkManager.Instance.localPlayerController.playerClientId)
         {
-            SyncAttackAnimationLocal(ownerAttackIndex, ownerStunTime, onlySyncParameters);
+            SyncAttackAnimationLocal(ownerAttackIndex, ownerStunTime, onlySyncParameters, atPos);
         }
     }
 
-    private void SyncAttackAnimationLocal(int nextAttackIndex, float nextStunTime, bool onlySyncParameters = false)
+    private void SyncAttackAnimationLocal(int nextAttackIndex, float nextStunTime, bool onlySyncParameters = false, Vector3 ownerServerPos = default)
     {
         stunTime = nextStunTime;
         currentAttackIndex = nextAttackIndex;
@@ -1498,6 +1509,11 @@ public class TheBoxerAI : EnemyAI
         }
         managerHitbox.OnAttackStart();
         inSpecialAnimationPreVulnerable = true;
+        if (ownerServerPos != default)
+        {
+            serverPosition = ownerServerPos;
+            positionLastInterval = ownerServerPos;
+        }
         SetEnemyInSpecialAnimation(true);
         SetEnemyVulnerable(false);
         AttackAnimationNames currentAttackTrigger = currentAttackSequence.attacks[currentAttackIndex];

@@ -72,5 +72,8 @@ crashlytics-build.properties
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
 
+AssetBundles/StandaloneWindows/
+Packages/
+ProjectSettings/
 Assets/References/
 Assets/LCBeatBoxerMod/Audio/

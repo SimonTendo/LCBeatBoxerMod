@@ -1,3 +1,5 @@
+using System.Linq;
+using System.Collections.Generic;
 using UnityEngine;
 using BepInEx.Logging;
 
@@ -224,6 +226,12 @@ public class RegisterData
 
     public static void AddEnemyFilesToTerminal(Terminal terminalScript)
     {
+        TerminalKeyword keywordInfo = GetInfoKeyword(terminalScript.terminalNodes.allKeywords);
+        List<CompatibleNoun> infoNouns = null;
+        if (keywordInfo != null)
+        {
+            infoNouns = keywordInfo.compatibleNouns.ToList();
+        }
         for (int i = 0; i < Plugin.allAssets.allBestiaryPages.Length; i++)
         {
             TerminalNode file = Plugin.allAssets.allBestiaryPages[i];
@@ -253,6 +261,49 @@ public class RegisterData
             {
                 Logger.LogWarning($"failed to find prefab ({creaturePrefab}) or scan node for {file.creatureName}");
             }
+            if (infoNouns != null)
+            {
+                infoNouns.Add(SetEnemyInfoCnoun(file, keywordInfo));
+            }
         }
+        if (infoNouns != null)
+        {
+            keywordInfo.compatibleNouns = infoNouns.ToArray();
+        }
+    }
+
+    private static TerminalKeyword GetInfoKeyword(TerminalKeyword[] allKeywords)
+    {
+        foreach (TerminalKeyword keyword in allKeywords)
+        {
+            if (keyword.word == "info")
+            {
+                Logger.LogDebug($"found {keyword}");
+                return keyword;
+            }
+        }
+        Logger.LogWarning("failed to find TerminalKeyword 'info', bestiary files cannot be accessed using this keyword");
+        return null;
+    }
+
+    private static CompatibleNoun SetEnemyInfoCnoun(TerminalNode enemyFile, TerminalKeyword infoVerb)
+    {
+        CompatibleNoun cNoun = new CompatibleNoun();
+        cNoun.result = enemyFile;
+        foreach (TerminalKeyword keyword in Plugin.allAssets.allKeywords)
+        {
+            if (keyword.specialKeywordResult == enemyFile)
+            {
+                keyword.defaultVerb = infoVerb;
+                cNoun.noun = keyword;
+                Logger.LogDebug($"successfully found keyword '{keyword}' with defaultVerb '{keyword.defaultVerb}' to link to node '{enemyFile}'");
+            }
+        }
+        if (cNoun.noun == null)
+        {
+            Logger.LogWarning($"SetEnemyInfoCnoun({enemyFile}, {infoVerb}) did not find keyword for noun");
+        }
+        Logger.LogDebug($"Created new CompatibleNoun with result '{cNoun.result}' and noun '{cNoun.noun}'");
+        return cNoun;
     }
 }

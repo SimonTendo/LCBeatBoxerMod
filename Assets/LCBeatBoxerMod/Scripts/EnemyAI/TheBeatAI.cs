@@ -471,6 +471,7 @@ public class TheBeatAI : EnemyAI
                     if (AnyPlayerHasLineOfSight(playerInCheckA, checkingNode.transform.position) != null)
                     {
                         LogAI($"!!!Player can see node at {checkingNode.transform.position}, skipping!!!", 2);
+                        nodeOutOfReach = true;
                         continue;
                     }
                     float distanceToNodePrioritized = Vector3.Distance(playerInCheckA.transform.position, checkingNode.transform.position);
@@ -481,6 +482,7 @@ public class TheBeatAI : EnemyAI
                     else if (TargetPlayerCloserAlongPath(pathToNode, fromPlayer))
                     {
                         LogAI($"!!!Node at {checkingNode.transform.position} at end of path too close to targetPlayer, skipping???", 2);
+                        nodeOutOfReach = true;
                         continue;
                     }
                     LogAI($"playerDistance = {distanceToNodePrioritized}", 1);

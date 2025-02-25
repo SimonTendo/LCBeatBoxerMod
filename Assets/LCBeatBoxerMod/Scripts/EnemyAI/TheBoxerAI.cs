@@ -4,7 +4,6 @@ using UnityEngine.Animations.Rigging;
 using Unity.Netcode;
 using GameNetcodeStuff;
 using BepInEx.Logging;
-using System.Runtime.InteropServices.WindowsRuntime;
 
 public class TheBoxerAI : EnemyAI
 {
@@ -25,6 +24,7 @@ public class TheBoxerAI : EnemyAI
     private bool inSpecialAnimationPreVulnerable;
     private Vector3 specialAnimVelocity;
     private bool heldShovelLastInterval;
+    private bool initiatedHostileToLocalPlayer;
 
     [Space(3f)]
     [Header("MOVEMENT")]
@@ -205,7 +205,6 @@ public class TheBoxerAI : EnemyAI
                 Log("STUN - START!!", 3);
                 SetAnimation("Stunned", IsOwner, true, true);
             }
-            return;
         }
         else
         {
@@ -500,6 +499,10 @@ public class TheBoxerAI : EnemyAI
                         }
                         else
                         {
+                            if (!initiatedHostileToLocalPlayer)
+                            {
+                                InitiateAttackSequence();
+                            }
                             if (!enemySpotlight.enabled)
                             {
                                 SetSpotlight(enemySpotlight);
@@ -524,7 +527,6 @@ public class TheBoxerAI : EnemyAI
                     }
                     if (allSeenPlayers != null && SetTargetPlayer(GetClosestSeenPlayerEye(allSeenPlayers, true)))
                     {
-                        InitiateAttackSequence(!GetHoldingShovel());
                         Log($"owner switching OWNERSHIP, not performing rest of currentBehaviorState({currentBehaviourStateIndex})", 3);
                         break;
                     }
@@ -595,7 +597,7 @@ public class TheBoxerAI : EnemyAI
         return switchState;
     }
 
-    private bool GoIntoHostile(PlayerControllerB withTarget = null, bool enableOwnSpotlight = false, bool initiateNewSequence = false)
+    private bool GoIntoHostile(PlayerControllerB withTarget = null, bool enableOwnSpotlight = false)
     {
         bool switchState = false;
         if (!IsOwner)
@@ -610,16 +612,11 @@ public class TheBoxerAI : EnemyAI
         LogAI($"switchState? {switchState}");
         if (!switchState)
         {
-            if (withTarget != targetPlayer)
-            {
-                InitiateAttackSequence(!GetHoldingShovel());
-            }
             SetTargetPlayer(withTarget);
             return switchState;
         }
         Log($"switching to: HOSTILE", 3);
         SetWavingGoodbye(false, true);
-        InitiateAttackSequence(!GetHoldingShovel());
         PlaySFX(intimidateSFX);
         SetSpotlight(playerSpotlight, true, false);
         ClearInventory();
@@ -1494,36 +1491,41 @@ public class TheBoxerAI : EnemyAI
         SyncAttackAnimation(clampedAttackIndex, nextStunTime, atPos: transform.position);
     }
 
-    private void SyncAttackAnimation(int ownerAttackIndex, float ownerStunTime, bool sync = true, bool onlySyncParameters = false, Vector3 atPos = default)
+    private void SyncAttackAnimation(int ownerAttackIndex, float ownerStunTime, bool sync = true, bool onlySyncParameters = false, bool calculateInitiateAttack = false, Vector3 atPos = default)
     {
         if (!IsOwner)
         {
             return;
         }
-        SyncAttackAnimationLocal(ownerAttackIndex, ownerStunTime, onlySyncParameters, atPos);
+        SyncAttackAnimationLocal(ownerAttackIndex, ownerStunTime, onlySyncParameters, calculateInitiateAttack, atPos);
         if (sync)
         {
-            SyncAttackAnimationServerRpc((int)GameNetworkManager.Instance.localPlayerController.playerClientId, ownerAttackIndex, ownerStunTime, onlySyncParameters, atPos);
+            SyncAttackAnimationServerRpc((int)GameNetworkManager.Instance.localPlayerController.playerClientId, ownerAttackIndex, ownerStunTime, onlySyncParameters, calculateInitiateAttack, atPos);
         }
     }
 
     [ServerRpc(RequireOwnership = false)]
-    private void SyncAttackAnimationServerRpc(int sentBy, int ownerAttackIndex, float ownerStunTime, bool onlySyncParameters, Vector3 atPos)
+    private void SyncAttackAnimationServerRpc(int sentBy, int ownerAttackIndex, float ownerStunTime, bool onlySyncParameters, bool calculateInitiateAttack, Vector3 atPos)
     {
-        SyncAttackAnimationClientRpc(sentBy, ownerAttackIndex, ownerStunTime, onlySyncParameters, atPos);
+        SyncAttackAnimationClientRpc(sentBy, ownerAttackIndex, ownerStunTime, onlySyncParameters, calculateInitiateAttack, atPos);
     }
 
     [ClientRpc]
-    private void SyncAttackAnimationClientRpc(int sentBy, int ownerAttackIndex, float ownerStunTime, bool onlySyncParameters, Vector3 atPos)
+    private void SyncAttackAnimationClientRpc(int sentBy, int ownerAttackIndex, float ownerStunTime, bool onlySyncParameters, bool calculateInitiateAttack, Vector3 atPos)
     {
         if (sentBy != (int)GameNetworkManager.Instance.localPlayerController.playerClientId)
         {
-            SyncAttackAnimationLocal(ownerAttackIndex, ownerStunTime, onlySyncParameters, atPos);
+            SyncAttackAnimationLocal(ownerAttackIndex, ownerStunTime, onlySyncParameters, calculateInitiateAttack, atPos);
         }
     }
 
-    private void SyncAttackAnimationLocal(int nextAttackIndex, float nextStunTime, bool onlySyncParameters = false, Vector3 ownerServerPos = default)
+    private void SyncAttackAnimationLocal(int nextAttackIndex, float nextStunTime, bool onlySyncParameters = false, bool calculateInitiateAttack = false, Vector3 ownerServerPos = default)
     {
+        if (calculateInitiateAttack)
+        {
+            initiatedHostileToLocalPlayer = targetPlayer == GameNetworkManager.Instance.localPlayerController;
+            Log($"initiatedHostileToLocalPlayer? {initiatedHostileToLocalPlayer}", 1);
+        }
         stunTime = nextStunTime;
         currentAttackIndex = nextAttackIndex;
         Log($"index: {currentAttackIndex} | stunTime: {stunTime}");
@@ -1700,6 +1702,7 @@ public class TheBoxerAI : EnemyAI
             yield return null;
         }
         DetectNewSighting(collidedPlayer.transform.position, true);
+        SetSpotlight(enemySpotlight);
         SetSpotlight(playerSpotlight);
         SetAnimation("GiveShovel");
     }
@@ -1774,7 +1777,7 @@ public class TheBoxerAI : EnemyAI
         Log("reached end of GiveShovelLocal()");
         yield return null;
         timeLastCollisionLocalPlayer = Time.realtimeSinceStartup - collisionCooldown + 1;
-        InitiateAttackSequence(true, false);
+        InitiateAttackSequence();
         yield return new WaitForSeconds(0.33f);
         SetAnimation("Taunt", false);
     }
@@ -1783,7 +1786,7 @@ public class TheBoxerAI : EnemyAI
     {
         Log("INITIATE ATTACK SEQUENCE!!!", 3);
         managerHitbox.DisableAllHitboxes();
-        SyncAttackAnimation(-1, 2.5f, sync, true);
+        SyncAttackAnimation(-1, 2.5f, sync, true, true);
         if (playAudioVisual)
         {
             SetSpotlight(enemySpotlight, sync);

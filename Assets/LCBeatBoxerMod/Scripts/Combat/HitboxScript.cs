@@ -136,15 +136,17 @@ public class HitboxScript : MonoBehaviour
             Log($"called SetEnemyInSpecialAnimTo on {name} with null mainScript", 2);
             return;
         }
-        LogAI($"{name}: PlayEnemyInSpecialAnimTo({setInSpecialAnimationTo}) on {mainScript} #{mainScript.NetworkObjectId}");
+        bool setTo = Plugin.ConvertToBool(setInSpecialAnimationTo);
+        LogAI($"{name}: PlayEnemyInSpecialAnimTo({setTo}) on {mainScript} #{mainScript.NetworkObjectId}");
         if (mainScript is TheBeatAI)
         {
             TheBeatAI beatEnemy = mainScript as TheBeatAI;
+            beatEnemy.SetEnemyInSpecialAnimation(setTo);
         }
         else if (mainScript is TheBoxerAI)
         {
             TheBoxerAI boxerEnemy = mainScript as TheBoxerAI;
-            boxerEnemy.SetEnemyInSpecialAnimation(Plugin.ConvertToBool(setInSpecialAnimationTo));
+            boxerEnemy.SetEnemyInSpecialAnimation(setTo);
         }
     }
 
@@ -285,6 +287,7 @@ public class HitboxScript : MonoBehaviour
             Log($"called CheckAttackHitOnManager on {name} with null mainScript", 2);
             return;
         }
+        bool hitSuccessful = false;
         if (mainScript is TheBeatAI)
         {
             TheBeatAI beatEnemy = mainScript as TheBeatAI;
@@ -297,9 +300,13 @@ public class HitboxScript : MonoBehaviour
                 Log($"{boxerEnemy} hit {managerHitbox.hitPlayerIDs.Count}", 1);
                 if (managerHitbox.hitPlayerIDs.Count != 0)
                 {
-                    boxerEnemy.OnHitSuccessful(managerHitbox.hitPlayerIDs.ToArray());
+                    hitSuccessful = boxerEnemy.OnHitSuccessful(managerHitbox.hitPlayerIDs.ToArray());
                 }
             }
+        }
+        if (hitSuccessful)
+        {
+            managerHitbox.hitPlayerIDs.Clear();
         }
     }
 
@@ -320,6 +327,7 @@ public class HitboxScript : MonoBehaviour
 
     private void CheckAttackHitOnHitbox(EnemyAI enemyScript)
     {
+        bool hitSuccessful = false;
         if (enemyScript is TheBeatAI)
         {
             TheBeatAI beatEnemy = enemyScript as TheBeatAI;
@@ -332,9 +340,13 @@ public class HitboxScript : MonoBehaviour
                 Log($"{boxerEnemy} hit {hitPlayerIDs.Count}", 1);
                 if (hitPlayerIDs.Count != 0)
                 {
-                    boxerEnemy.OnHitSuccessful(hitPlayerIDs.ToArray());
+                    hitSuccessful = boxerEnemy.OnHitSuccessful(hitPlayerIDs.ToArray());
                 }
             }
+        }
+        if (hitSuccessful)
+        {
+            hitPlayerIDs.Clear();
         }
     }
 

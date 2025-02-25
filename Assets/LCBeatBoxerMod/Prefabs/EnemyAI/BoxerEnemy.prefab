@@ -855,13 +855,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2307508675093832711}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: -25, z: 0}
+  m_LocalRotation: {x: 0.38268343, y: 0, z: 0, w: 0.92387956}
+  m_LocalPosition: {x: 0.8, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1246561416834299316}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_Father: {fileID: 3267086724964007331}
+  m_LocalEulerAnglesHint: {x: 45, y: 0, z: 0}
 --- !u!1 &2464627106915141775
 GameObject:
   m_ObjectHideFlags: 0
@@ -961,7 +961,6 @@ Transform:
   - {fileID: 179811927394654916}
   - {fileID: 5398868389727123319}
   - {fileID: 5983321052945542470}
-  - {fileID: 5723987863304232398}
   - {fileID: 1663856057188408346}
   - {fileID: 6853446966936577232}
   - {fileID: 7293338947674848666}
@@ -1147,7 +1146,7 @@ MonoBehaviour:
   currentAttackSequence: {fileID: 11400000, guid: 6d3dde3698180c642887abf59b8abd82,
     type: 2}
   stunTimePerAttackEnum:
-  - 0.75
+  - 1.5
   - 2
   - 1
   - 3
@@ -1523,6 +1522,7 @@ Transform:
   m_LocalScale: {x: 1.0000001, y: 1, z: 1.0000001}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 5723987863304232398}
   - {fileID: 5599238018128995327}
   - {fileID: 3582530207100010977}
   - {fileID: 8477935354570973282}

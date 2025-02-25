@@ -907,7 +907,7 @@ AudioSource:
   Priority: 128
   DopplerLevel: 0
   MinDistance: 1
-  MaxDistance: 25
+  MaxDistance: 40
   Pan2D: 0
   rolloffMode: 2
   BypassEffects: 0
@@ -926,8 +926,8 @@ AudioSource:
       inWeight: 0.33333334
       outWeight: 0.33333334
     - serializedVersion: 3
-      time: 0.6095398
-      value: 0.40317953
+      time: 0.5
+      value: 0.5
       inSlope: -3.3883078
       outSlope: -3.3883078
       tangentMode: 0
@@ -1538,6 +1538,7 @@ GameObject:
   - component: {fileID: 2724079760244070479}
   - component: {fileID: 8709324732199999377}
   - component: {fileID: 9193144167387737255}
+  - component: {fileID: 7714559886640025644}
   m_Layer: 0
   m_Name: AnimContainer
   m_TagString: Untagged
@@ -1675,6 +1676,26 @@ MonoBehaviour:
       m_Calls: []
   destroyObject: {fileID: 0}
   playAudibleNoise: 0
+--- !u!114 &7714559886640025644
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4156152715552938423}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e4342ed3ca475314582a4403033f7529, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  isManager: 1
+  mainScript: {fileID: -102812192422783989}
+  allHitboxes: []
+  hitboxCollider: {fileID: 0}
+  attackPower: 0
+  attackForce: {x: 0, y: 0, z: 0}
+  deathAnimIndex: 0
+  managerHitbox: {fileID: 0}
 --- !u!1 &4163654431449901847
 GameObject:
   m_ObjectHideFlags: 0

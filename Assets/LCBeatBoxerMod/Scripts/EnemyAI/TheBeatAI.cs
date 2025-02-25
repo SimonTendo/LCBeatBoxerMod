@@ -246,10 +246,16 @@ public class TheBeatAI : EnemyAI
                 {
                     StopSearch(currentSearch);
                 }
-                PlayerControllerB playerSeeingInHide = AnyPlayerHasLineOfSight();
+                if (inSpecialAnimation)
+                {
+                    agent.speed = 0;
+                    break;
+                }
+                PlayerControllerB playerSeeingInHide = AnyPlayerHasLineOfSight(null, transform.position);
                 if (playerSeeingInHide != null)
                 {
-                    DetectNewSighting(playerSeeingInHide.transform.position);
+                    DetectNewSighting(playerSeeingInHide.transform.position, true);
+                    Log($"playerSeeingInHide {playerSeeingInHide}");
                     if (!seenDuringThisAmbush && !enraged)
                     {
                         agent.speed = chaseSpeed;
@@ -257,9 +263,11 @@ public class TheBeatAI : EnemyAI
                         enraged = true;
                         SetMovingTowardsTargetPlayer(targetPlayer);
                         Log("CHASE PLAYER UNTIL OUT OF SIGHT!!!", 3);
-                        PlaySFX(intimidateSFX);
                         ToggleAudioServerRpc(runningVolume, chaseSpeed);
+                        agent.speed = 0;
+                        SetAnimation("Intimidate");
                         SetAnimation(null, true, "WalkUprightSpeedMultiplier", 3);
+                        break;
                     }
                 }
                 else if (enraged)
@@ -387,6 +395,10 @@ public class TheBeatAI : EnemyAI
                     {
                         ToggleAudioServerRpc(runningVolume, agent.speed);
                     }
+                }
+                else
+                {
+                    agent.speed = 0;
                 }
                 if (targetPlayer == StartOfRound.Instance.localPlayerController && Vector3.Distance(transform.position, targetPlayer.transform.position) < realAudio.maxDistance * 0.7f)
                 {
@@ -1121,7 +1133,6 @@ public class TheBeatAI : EnemyAI
         realAudio.volume = 0.0f;
         PlaySFX(caughtSFX, false, false, false);
         SetAnimation("AttackStart", false);
-        inSpecialAnimation = true;
         inSpecialAnimationWithPlayer = player;
         player.inAnimationWithEnemy = this;
         player.inSpecialInteractAnimation = true;
@@ -1181,7 +1192,6 @@ public class TheBeatAI : EnemyAI
         {
             PlaySFX(successCheer, false, true);
         }
-        inSpecialAnimation = false;
         CheckEnragedAfterAttack();
     }
 
@@ -1192,7 +1202,6 @@ public class TheBeatAI : EnemyAI
         realAudio.volume = 0.0f;
         PlaySFX(caughtSFX, false, false, false);
         SetAnimation("AttackStart", false);
-        inSpecialAnimation = true;
         inSpecialAnimationWithPlayer = player;
         player.inAnimationWithEnemy = this;
         player.inSpecialInteractAnimation = true;
@@ -1218,7 +1227,6 @@ public class TheBeatAI : EnemyAI
         SetAnimation("Attack", false);
         PlaySFX(reelSFX, false, false, false);
         yield return new WaitForSeconds(1.2f);
-        inSpecialAnimation = false;
         CheckEnragedAfterAttack();
     }
 
@@ -1247,6 +1255,12 @@ public class TheBeatAI : EnemyAI
             Log($"OWNER READYING UP TO GIVE CONTROL BACK TO SERVER!!", 1);
             ChangeOwnershipOfEnemy(StartOfRound.Instance.allPlayerScripts[0].actualClientId);
         }
+    }
+
+    public void SetEnemyInSpecialAnimation(bool setInSpecialAnimationTo)
+    {
+        inSpecialAnimation = setInSpecialAnimationTo;
+        LogAI($"inSpecialAnimation = {inSpecialAnimation}");
     }
 
     [ServerRpc(RequireOwnership = false)]

@@ -10,6 +10,7 @@ using BepInEx.Logging;
 public class TheBeatAI : EnemyAI
 {
     private static ManualLogSource Logger = Plugin.Logger;
+    private static int debugLogLevel = -1;
 
     private float tempTimer;
     private bool setItemLocally;
@@ -98,8 +99,13 @@ public class TheBeatAI : EnemyAI
             crowdVoices.transform.SetParent(RoundManager.Instance.spawnedScrapContainer);
             beatAudience = crowdVoices;
         }
-        DebugEnemy = Plugin.DebugLogLevel() >= 1;
-        debugEnemyAI = Plugin.DebugLogLevel() == 2;
+
+        if (debugLogLevel == -1)
+        {
+            debugLogLevel = Plugin.DebugLogLevel();
+            DebugEnemy = debugLogLevel >= 1;
+            debugEnemyAI = debugLogLevel >= 2;
+        }
     }
 
     public override void Update()
@@ -413,7 +419,7 @@ public class TheBeatAI : EnemyAI
         Log("STARTING COROUTINE PickItemPosition()!!!", 3);
         LogAI($"allAINodes.Length = {allAINodes.Length}", 1);
         Vector3 startPos = transform.position;
-        if (debugEnemyAI)
+        if (debugLogLevel > 2)
         {
             Instantiate(debugNodeLightPrefab, startPos, Quaternion.identity);
         }
@@ -428,7 +434,7 @@ public class TheBeatAI : EnemyAI
             GameObject checkingNode = allAINodes[a];
             Light spawnedLight = null;
             Color colorLightToSpawn = Color.red;
-            if (debugEnemyAI)
+            if (debugLogLevel > 2)
             {
                 spawnedLight = Instantiate(debugNodeLightPrefab, checkingNode.transform.position, Quaternion.identity).GetComponent<Light>();
             }

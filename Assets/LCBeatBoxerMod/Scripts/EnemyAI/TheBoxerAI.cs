@@ -8,6 +8,7 @@ using BepInEx.Logging;
 public class TheBoxerAI : EnemyAI
 {
     private static ManualLogSource Logger = Plugin.Logger;
+    private static int debugLogLevel = -1;
 
     private Vector3 positionLastInterval;
     private float distanceLastIntervalTarget;
@@ -146,10 +147,14 @@ public class TheBoxerAI : EnemyAI
         playerSpotlight.intensity = 5000;
         playerSpotlight.range = 25;
         playerSpotlight.shadows = LightShadows.None;
-        SetSpotlight(playerSpotlight, false, false); 
+        SetSpotlight(playerSpotlight, false, false);
 
-        DebugEnemy = Plugin.DebugLogLevel() >= 1;
-        debugEnemyAI = Plugin.DebugLogLevel() == 2;
+        if (debugLogLevel == -1)
+        {
+            debugLogLevel = Plugin.DebugLogLevel();
+            DebugEnemy = debugLogLevel >= 1;
+            debugEnemyAI = debugLogLevel >= 2;
+        }
     }
 
     private Transform GetNestTransform()

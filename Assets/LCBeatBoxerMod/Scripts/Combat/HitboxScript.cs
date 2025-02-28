@@ -6,8 +6,8 @@ using BepInEx.Logging;
 public class HitboxScript : MonoBehaviour
 {
     private static ManualLogSource Logger = Plugin.Logger;
+    private static int debugLogLevel = -1;
 
-    private int logLevel;
     [Header("Manager")]
     public bool isManager;
     public EnemyAI mainScript;
@@ -23,7 +23,10 @@ public class HitboxScript : MonoBehaviour
 
     private void Start()
     {
-        logLevel = Plugin.DebugLogLevel();
+        if (debugLogLevel == -1)
+        {
+            debugLogLevel = Plugin.DebugLogLevel();
+        }
         if (isManager)
         {
             managerHitbox = this;
@@ -353,7 +356,7 @@ public class HitboxScript : MonoBehaviour
     //Useful for once-off information that needs to be distuinguishable in the debug log
     private void Log(string message, int type = 0)
     {
-        if (logLevel < 1)
+        if (debugLogLevel < 1)
         {
             return;
         }
@@ -377,7 +380,7 @@ public class HitboxScript : MonoBehaviour
     //For printing every individual step of the enemy, similarly to its currentSearch coroutine on DoAIInterval
     private void LogAI(string message, int type = 0)
     {
-        if (logLevel < 2)
+        if (debugLogLevel < 2)
         {
             return;
         }

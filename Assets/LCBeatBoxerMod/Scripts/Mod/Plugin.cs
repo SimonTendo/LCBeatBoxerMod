@@ -1,13 +1,13 @@
 using System.IO;
 using System.Reflection;
 using UnityEngine;
+using GameNetcodeStuff;
 using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
 using HarmonyLib.Tools;
-using GameNetcodeStuff;
 
-[BepInPlugin("com.github.SimonTendo.LCBeatBoxerMod", "LCBeatBoxerMod", "0.2.1")]
+[BepInPlugin("com.github.SimonTendo.LCBeatBoxerMod", "LCBeatBoxerMod", "0.2.2")]
 public class Plugin : BaseUnityPlugin
 {
     internal new static ManualLogSource Logger;
@@ -51,19 +51,23 @@ public class Plugin : BaseUnityPlugin
 
     public static int DebugLogLevel()
     {
+        int toReturn = 0;
         if (Configs.printDebugEnemyAI.Value)
         {
-            Logger.LogDebug($"[Print debugEnemyAI]: {Configs.printDebugEnemyAI.Value} || DebugEnemy: TRUE || debugEnemyAI: TRUE");
-            return 2;
+            toReturn = 2;
+            Logger.LogDebug($"[Print debugEnemyAI]: {Configs.printDebugEnemyAI.Value} || toReturn = {toReturn}");
+            return toReturn;
         }
         if (Application.isEditor)
         {
-            Logger.LogDebug($"isEditor: {Application.isEditor} || DebugEnemy: TRUE || debugEnemyAI: FALSE");
+            toReturn = 1;
+            Logger.LogDebug($"isEditor: {Application.isEditor} || toReturn = {toReturn}");
             return 1;
         }
         else if (Configs.printDebugEnemy.Value)
         {
-            Logger.LogDebug($"[Print DebugEnemy]: {Configs.printDebugEnemy.Value} || DebugEnemy: TRUE || debugEnemyAI: FALSE");
+            toReturn = 1;
+            Logger.LogDebug($"[Print DebugEnemy]: {Configs.printDebugEnemy.Value} || toReturn = {toReturn}");
             return 1;
         }
         else
@@ -72,12 +76,14 @@ public class Plugin : BaseUnityPlugin
             {
                 if (player != null && player.playerUsername != null && player.playerUsername == "simtendo")
                 {
-                    Logger.LogDebug($"playing with {player.playerUsername} || DebugEnemy: TRUE || debugEnemyAI: FALSE");
-                    return 1;
+                    toReturn = 1;
+                    Logger.LogDebug($"playing with {player.playerUsername} || toReturn = {toReturn}");
+                    return toReturn;
                 }
             }
         }
-        return 0;
+        Logger.LogDebug($"toReturn = {toReturn}");
+        return toReturn;
     }
 
     private static void UnityNetcodePatcher()

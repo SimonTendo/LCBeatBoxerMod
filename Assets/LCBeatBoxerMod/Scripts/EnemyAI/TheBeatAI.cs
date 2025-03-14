@@ -29,11 +29,15 @@ public class TheBeatAI : EnemyAI
     private Vector3 lookingAt;
 
     [Space(3f)]
-    [Header("SPEEDS")]
+    [Header("MOVEMENT")]
     public float roamSpeed;
     public float hideSpeed;
     public float chaseSpeed;
     public float enragedSpeed;
+    public AISearchRoutine roamingSearch;
+    public AISearchRoutine investigateSearch;
+    [Tooltip("Low numbers are closer to the enemy transform, high numbers are closer to the point it finds for players/entrances.")]
+    public float lerpMidpoint;
 
     [Space(3f)]
     [Header("SENSES")]
@@ -89,6 +93,7 @@ public class TheBeatAI : EnemyAI
     [Header("DEBUG")]
     public GameObject debugNodeLightPrefab;
     public GameObject debugEyeForward;
+    public bool debugInvestigateNoises;
 
     public override void Start()
     {
@@ -105,6 +110,11 @@ public class TheBeatAI : EnemyAI
             debugLogLevel = Plugin.DebugLogLevel();
             DebugEnemy = debugLogLevel >= 1;
             debugEnemyAI = debugLogLevel >= 2;
+        }
+
+        if (IsServer)
+        {
+            SpawnItemServerRpc(true);
         }
     }
 
@@ -168,10 +178,10 @@ public class TheBeatAI : EnemyAI
             case 0:
                 if (setItemLocally)
                 {
-                    if (currentSearch.inProgress)
+                    if (roamingSearch.inProgress)
                     {
-                        Log("STOP search (0)");
-                        StopSearch(currentSearch);
+                        Log("STOP search // ROAM (0)");
+                        StopSearch(roamingSearch);
                     }
                     
                     if (!reachedHideSpot)
@@ -229,10 +239,10 @@ public class TheBeatAI : EnemyAI
 
                     
                 }
-                else if (!currentSearch.inProgress)
+                else if (!roamingSearch.inProgress && !investigateSearch.inProgress)
                 {
-                    Log("START search (0)");
-                    StartSearch(transform.position);
+                    Log("START search // ROAM (0)");
+                    StartSearch(GetMidpoint(), roamingSearch);
                     SetAnimation("WalkHunched");
                     agent.speed = roamSpeed;
                     ToggleAudioServerRpc(footstepsVolume, roamSpeed);
@@ -248,9 +258,15 @@ public class TheBeatAI : EnemyAI
                 }
                 break;
             case 1:
-                if (currentSearch.inProgress)
+                if (roamingSearch.inProgress)
                 {
-                    StopSearch(currentSearch);
+                    Log("STOP search // ROAM (1)");
+                    StopSearch(roamingSearch);
+                }
+                if (investigateSearch.inProgress)
+                {
+                    Log("STOP search // INVESTIGATE (1)");
+                    StopSearch(investigateSearch);
                 }
                 if (inSpecialAnimation)
                 {
@@ -262,14 +278,14 @@ public class TheBeatAI : EnemyAI
                 {
                     DetectNewSighting(playerSeeingInHide.transform.position, true);
                     Log($"playerSeeingInHide {playerSeeingInHide}");
+                    agent.speed = inSpecialAnimation ? 0.0f : chaseSpeed;
                     if (!seenDuringThisAmbush && !enraged)
                     {
-                        agent.speed = chaseSpeed;
                         seenDuringThisAmbush = true;
                         enraged = true;
                         SetMovingTowardsTargetPlayer(targetPlayer);
                         Log("CHASE PLAYER UNTIL OUT OF SIGHT!!!", 3);
-                        ToggleAudioServerRpc(runningVolume, chaseSpeed);
+                        ToggleAudioServerRpc(runningVolume, agent.speed);
                         agent.speed = 0;
                         SetAnimation("Intimidate");
                         SetAnimation(null, true, "WalkUprightSpeedMultiplier", 3);
@@ -349,10 +365,15 @@ public class TheBeatAI : EnemyAI
                 }
                 break;
             case 2:
-                if (currentSearch.inProgress)
+                if (roamingSearch.inProgress)
                 {
-                    Log($"STOP search (2)");
-                    StopSearch(currentSearch);
+                    Log($"STOP search // ROAM (2)");
+                    StopSearch(roamingSearch);
+                }
+                if (investigateSearch.inProgress)
+                {
+                    Log($"STOP search // INVESTIGATE (2)");
+                    StopSearch(investigateSearch);
                 }
                 PlayerControllerB playerHoldingItem = GetValidPlayerHoldingItem();
                 bool unlimitedAwareness = enraged || playerHoldingItem != null;
@@ -455,7 +476,7 @@ public class TheBeatAI : EnemyAI
                 colorLightToSpawn = Color.yellow;
                 LogAI($"nodeOutOfReach: CalculatePatch()", 0);
             }
-            else if (Vector3.Distance(pathToNode.corners[pathToNode.corners.Length - 1], RoundManager.Instance.GetNavMeshPosition(checkingNode.transform.position, RoundManager.Instance.navHit, 2.7f)) > 1.5f)
+            else if (Vector3.Distance(pathToNode.corners[pathToNode.corners.Length - 1], RoundManager.Instance.GetNavMeshPosition(checkingNode.transform.position, RoundManager.Instance.navHit, 2.7f)) > 1f)
             {
                 nodeOutOfReach = true;
                 colorLightToSpawn = Color.yellow;
@@ -629,6 +650,58 @@ public class TheBeatAI : EnemyAI
         return toReturn;
     }
 
+    private Vector3 GetMidpoint(Vector3 startPos = default)
+    {
+        Log("Getting midpoint!!!", 3);
+        Vector3 toReturn = transform.position;
+        Vector3 calculateMidpointFrom = Vector3.zero;
+        Vector3 midPoint = Vector3.zero;
+        PlayerControllerB player = null;
+        if (startPos == default)
+        {
+            Log($"calculating from nearest player or entrance", 1);
+            player = targetPlayer != null ? targetPlayer : GetClosestPlayer();
+            if (player != null)
+            {
+                calculateMidpointFrom = player.transform.position;
+            }
+            else
+            {
+                Vector3 entrance = RoundManager.FindMainEntrancePosition();
+                Log($"had to search for entrance and found {entrance}");
+                if (entrance != Vector3.zero)
+                {
+                    calculateMidpointFrom = entrance;
+                }
+            }
+        }
+        else
+        {
+            calculateMidpointFrom = startPos;
+        }
+        if (calculateMidpointFrom == Vector3.zero)
+        {
+            Log($"point to calculate midpoint from is zero, returning own transform");
+            return toReturn;
+        }
+        midPoint = ChooseClosestNodeToPosition(Vector3.Lerp(transform.position, calculateMidpointFrom, lerpMidpoint)).position;
+        if (!agent.CalculatePath(midPoint, path1))
+        {
+            LogAI($"CalculatePath()", 2);
+        }
+        else if (Vector3.Distance(path1.corners[path1.corners.Length - 1], RoundManager.Instance.GetNavMeshPosition(midPoint, RoundManager.Instance.navHit, 2.7f)) > 1f)
+        {
+            LogAI($"GetNavMeshPosition()", 2);
+        }
+        else
+        {
+            toReturn = midPoint;
+            Log($"success! player: {player} | calculateMidpointFrom {calculateMidpointFrom} | toReturn {toReturn}", 2);
+        }
+        Log($"GetMidpoint() sending toReturn {toReturn}", 1);
+        return toReturn;
+    }
+
     private bool TargetPlayerCloserAlongPath(NavMeshPath path, PlayerControllerB fleeFrom = null)
     {
         if (fleeFrom == null)
@@ -763,7 +836,6 @@ public class TheBeatAI : EnemyAI
         seenDuringThisAmbush = false;
         enraged = false;
         attemptingItemRetrieve = false;
-        currentSearch.timesFinishingSearch = 0;
         Log("set everything back", 1);
         TestEnemyScript.DestroyAllNodeLights();
         if (moveToAmbush)
@@ -813,9 +885,15 @@ public class TheBeatAI : EnemyAI
             Log($"started ambush with targetPlayer {targetPlayer}");
         }
         SetAnimation("WalkUpright", true, "WalkUprightSpeedMultiplier", 5);
-        if (currentSearch.inProgress)
+        if (roamingSearch.inProgress)
         {
-            StopSearch(currentSearch);
+            Log("STOP search // ROAM (ambush)");
+            StopSearch(roamingSearch);
+        }
+        if (investigateSearch.inProgress)
+        {
+            Log("STOP search // INVESTIGATE (ambush)");
+            StopSearch(investigateSearch);
         }
         attemptingItemRetrieve = GetValidItemRetrieve(true);
         if (!attemptingItemRetrieve)
@@ -853,11 +931,11 @@ public class TheBeatAI : EnemyAI
         setItemLocally = true;
         if (fakeAudioThisAmbush)
         {
-            if (linkedItem == null)
+            if (linkedItem == null || linkedItem.parentObject != holdItemParentObject)
             {
-                SpawnItemServerRpc();
+                SpawnItemServerRpc(false);
             }
-            else if (linkedItem.parentObject == holdItemParentObject)
+            else
             {
                 Log($"owner dropping {linkedItem} #{linkedItem.NetworkObjectId}", 1);
                 DropLinkedItem();
@@ -929,7 +1007,7 @@ public class TheBeatAI : EnemyAI
                 Log($"CalculatePath()", 2);
                 return false;
             }
-            else if (Vector3.Distance(path1.corners[path1.corners.Length - 1], RoundManager.Instance.GetNavMeshPosition(linkedItem.transform.position, RoundManager.Instance.navHit, 2.7f)) > 1.5f)
+            else if (Vector3.Distance(path1.corners[path1.corners.Length - 1], RoundManager.Instance.GetNavMeshPosition(linkedItem.transform.position, RoundManager.Instance.navHit, 2.7f)) > 1f)
             {
                 Log($"GetNavMeshPosition()", 2);
                 return false;
@@ -943,7 +1021,7 @@ public class TheBeatAI : EnemyAI
     public override void DetectNoise(Vector3 noisePosition, float noiseLoudness, int timesPlayedInOneSpot = 0, int noiseID = 0)
     {
         base.DetectNoise(noisePosition, noiseLoudness, timesPlayedInOneSpot, noiseID);
-        if (noiseID == 546)
+        if (noiseID == 546 || noiseID == 202251)
         {
             return;
         }
@@ -988,6 +1066,7 @@ public class TheBeatAI : EnemyAI
         {
             Log("looking at");
             DetectNewSighting(noisePosition);
+            InvestigateNoise(noisePosition);
         }
         if (additive >= noiseThreshold)
         {
@@ -1044,6 +1123,24 @@ public class TheBeatAI : EnemyAI
             return false;
         }
         return true;
+    }
+
+    private void InvestigateNoise(Vector3 noisePosition)
+    {
+        if (!debugInvestigateNoises || currentBehaviourStateIndex != 0 || setItemLocally || reachedHideSpot)
+        {
+            return;
+        }
+        if (roamingSearch.inProgress)
+        {
+            Log($"STOP search // ROAM (noise)");
+            StopSearch(roamingSearch, false);
+        }
+        if (!investigateSearch.inProgress)
+        {
+            Log($"START search // INVESTIGATE (noise)");
+            StartSearch(GetMidpoint(noisePosition), investigateSearch);
+        }
     }
 
     public override void SetEnemyStunned(bool setToStunned, float setToStunTime = 1, PlayerControllerB setStunnedByPlayer = null)
@@ -1104,7 +1201,10 @@ public class TheBeatAI : EnemyAI
                 }
                 if (IsOwner)
                 {
-                    MoveToAmbush(localPlayer);
+                    if (!setItemLocally)
+                    {
+                        MoveToAmbush(localPlayer);
+                    }
                 }
                 else
                 {
@@ -1283,10 +1383,11 @@ public class TheBeatAI : EnemyAI
         if (sentBy == -1 || sentBy != (int)GameNetworkManager.Instance.localPlayerController.playerClientId)
         {
             Log($"CollisionLogicClientRpc(): currentBehaviourStateIndex {currentBehaviourStateIndex} | sentBy {sentBy}");
+            sentBy = (int)GetValidPlayer(sentBy).playerClientId;
             switch (currentBehaviourStateIndex)
             {
                 case 0:
-                    if (IsOwner)
+                    if (IsOwner && !setItemLocally)
                     {
                         MoveToAmbush(StartOfRound.Instance.allPlayerScripts[sentBy]);
                     }
@@ -1305,9 +1406,54 @@ public class TheBeatAI : EnemyAI
     }
 
     [ServerRpc(RequireOwnership = false)]
-    private void SpawnItemServerRpc()
+    private void SpawnItemServerRpc(bool holdItemAfterSpawn)
     {
-        Instantiate(itemToSpawn.spawnPrefab, transform.position + Vector3.up * 2, Quaternion.identity, RoundManager.Instance.spawnedScrapContainer).GetComponent<NetworkObject>().Spawn();
+        GameObject spawnedItem = Instantiate(itemToSpawn.spawnPrefab, transform.position + Vector3.up * 2, Quaternion.identity, RoundManager.Instance.spawnedScrapContainer);
+        NetworkObject netObj = spawnedItem.GetComponent<NetworkObject>();
+        netObj.Spawn();
+        if (holdItemAfterSpawn)
+        {
+            BeatAudioItem itemScript = spawnedItem.GetComponent<BeatAudioItem>();
+            if (itemScript == null)
+            {
+                Log("host failed to get itemScript in SpawnItemServerRpc()", 3);
+                return;
+            }
+            GrabLinkedItemLocal(itemScript);
+            SpawnItemClientRpc(netObj);
+        }
+    }
+
+    [ClientRpc]
+    private void SpawnItemClientRpc(NetworkObjectReference itemNOR)
+    {
+        if (!IsServer)
+        {
+            StartCoroutine(WaitForSpawnedItem(itemNOR));
+        }
+    }
+
+    private IEnumerator WaitForSpawnedItem(NetworkObjectReference itemNOR)
+    {
+        NetworkObject netObj = null;
+        float startTime = Time.realtimeSinceStartup;
+        while (Time.realtimeSinceStartup - startTime < 8 && !itemNOR.TryGet(out netObj))
+        {
+            yield return new WaitForSeconds(0.03f);
+        }
+        if (netObj == null)
+        {
+            Log("failed to get netObj on client!", 3);
+            yield break;
+        }
+        yield return new WaitForEndOfFrame();
+        BeatAudioItem itemScript = netObj.gameObject.GetComponent<BeatAudioItem>();
+        if (itemScript == null)
+        {
+            Log("client failed to get itemScript in WaitForSpawnedItem()", 3);
+            yield break;
+        }
+        GrabLinkedItemLocal(itemScript);
     }
 
     [ServerRpc(RequireOwnership = false)]
@@ -1373,6 +1519,23 @@ public class TheBeatAI : EnemyAI
     private void ChaseNewPlayerOnLocalClient(PlayerControllerB playerToChase)
     {
         SetMovingTowardsTargetPlayer(playerToChase);
+    }
+
+    private PlayerControllerB GetValidPlayer(int playerID, bool getClosestPlayer = false)
+    {
+        if (playerID >= 0 && playerID < StartOfRound.Instance.allPlayerScripts.Length)
+        {
+            return StartOfRound.Instance.allPlayerScripts[playerID];
+        }
+        if (getClosestPlayer)
+        {
+            PlayerControllerB closestPlayer = GetClosestPlayer();
+            if (closestPlayer != null)
+            {
+                return closestPlayer;
+            }
+        }
+        return StartOfRound.Instance.allPlayerScripts[0];
     }
 
     private void SetAnimation(string animString = null, bool sync = true, string paramString = null, float paramFloat = 1.0f)
@@ -1451,7 +1614,7 @@ public class TheBeatAI : EnemyAI
         WalkieTalkie.TransmitOneShotAudio(sourceToPlay, clipToPlay);
         if (audibleNoise)
         {
-            RoundManager.Instance.PlayAudibleNoise(transform.position, 20);
+            RoundManager.Instance.PlayAudibleNoise(transform.position, 20, noiseID: 202251);
         }
     }
 
@@ -1609,13 +1772,13 @@ public class TheBeatAI : EnemyAI
     //Useful for once-off information that needs to be distuinguishable in the debug log
     private void Log(string message, int type = 0)
     {
-        if (!DebugEnemy)
+        if (debugLogLevel < 1)
         {
             return;
         }
         switch (type)
         {
-            case 0:
+            default:
                 Logger.LogDebug(message);
                 return;
             case 1:
@@ -1630,16 +1793,16 @@ public class TheBeatAI : EnemyAI
         }
     }
 
-    //For printing every individual step of the enemy, similarly to its currentSearch coroutine on DoAIInterval
+    //For printing every individual step of the enemy, similarly to its search coroutine on DoAIInterval
     private void LogAI(string message, int type = 0)
     {
-        if (!debugEnemyAI)
+        if (debugLogLevel < 2)
         {
             return;
         }
         switch (type)
         {
-            case 0:
+            default:
                 Logger.LogDebug(message);
                 return;
             case 1:

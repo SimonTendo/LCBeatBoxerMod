@@ -39,26 +39,31 @@ public class RegisterData
             for (int j = 0; j < StartOfRound.Instance.levels.Length; j++)
             {
                 SelectableLevel level = StartOfRound.Instance.levels[j];
-                if (rarityData.levelID == level.levelID)
+                if ((rarityData.levelID == -1 && level.levelID > 12) || rarityData.levelID == level.levelID)
                 {
-                    foreach (SpawnableEnemyWithRarity enemy in rarityData.enemiesWithRarities)
-                    {
-                        if (Configs.overrideRarityAll.Value >= 1)
-                        {
-                            enemy.rarity = Configs.overrideRarityAll.Value;
-                        }
-                        if (enemy.enemyType.isOutsideEnemy)
-                        {
-                            Logger.LogDebug($"adding OUTside {enemy.enemyType.enemyName} to {level} #{level.levelID} with rarity {enemy.rarity}"); 
-                            level.OutsideEnemies.Add(enemy);
-                        }
-                        else
-                        {
-                            Logger.LogDebug($"adding INside {enemy.enemyType.enemyName} to {level} #{level.levelID} with rarity {enemy.rarity}");
-                            level.Enemies.Add(enemy);
-                        }
-                    }
+                    RegisterEnemyToLevel(rarityData, level);
                 }
+            }
+        }
+    }
+
+    public static void RegisterEnemyToLevel(LevelWithRarity rarityData, SelectableLevel level)
+    {
+        foreach (SpawnableEnemyWithRarity enemy in rarityData.enemiesWithRarities)
+        {
+            if (Configs.overrideRarityAll.Value >= 1)
+            {
+                enemy.rarity = Configs.overrideRarityAll.Value;
+            }
+            if (enemy.enemyType.isOutsideEnemy)
+            {
+                Logger.LogDebug($"adding OUTside {enemy.enemyType.enemyName} to {level} #{level.levelID} with rarity {enemy.rarity}");
+                level.OutsideEnemies.Add(enemy);
+            }
+            else
+            {
+                Logger.LogDebug($"adding INside {enemy.enemyType.enemyName} to {level} #{level.levelID} with rarity {enemy.rarity}");
+                level.Enemies.Add(enemy);
             }
         }
     }

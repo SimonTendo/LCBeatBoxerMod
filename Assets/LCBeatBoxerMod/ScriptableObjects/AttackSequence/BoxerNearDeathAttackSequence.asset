@@ -10,13 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 158b9a17b9c2973459b98a1f2a63fdbe, type: 3}
-  m_Name: BoxerDefaultAttackSequence
+  m_Name: BoxerNearDeathAttackSequence
   m_EditorClassIdentifier: 
   attacks:
-  - {fileID: 11400000, guid: 43540afd286cc4c47896409d2a8597c4, type: 2}
-  - {fileID: 11400000, guid: 43540afd286cc4c47896409d2a8597c4, type: 2}
+  - {fileID: 11400000, guid: 91f22cce60a066c47859947fd5649f18, type: 2}
   - {fileID: 11400000, guid: 0f032ee3d8e241b4bac85310ab9c61a9, type: 2}
   - {fileID: 11400000, guid: 193e6c07448ef6545a23918047b366bc, type: 2}
   - {fileID: 11400000, guid: 43540afd286cc4c47896409d2a8597c4, type: 2}
-  - {fileID: 11400000, guid: 0f032ee3d8e241b4bac85310ab9c61a9, type: 2}
-  - {fileID: 11400000, guid: 91f22cce60a066c47859947fd5649f18, type: 2}
+  - {fileID: 11400000, guid: 193e6c07448ef6545a23918047b366bc, type: 2}
+  - {fileID: 11400000, guid: 582601cdcb51a4543a1c4bba31c31863, type: 2}

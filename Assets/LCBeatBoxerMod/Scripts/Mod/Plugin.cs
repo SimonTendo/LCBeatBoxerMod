@@ -7,7 +7,7 @@ using BepInEx.Logging;
 using HarmonyLib;
 using HarmonyLib.Tools;
 
-[BepInPlugin("com.github.SimonTendo.LCBeatBoxerMod", "LCBeatBoxerMod", "0.2.2")]
+[BepInPlugin("com.github.SimonTendo.LCBeatBoxerMod", "LCBeatBoxerMod", "0.3.0")]
 public class Plugin : BaseUnityPlugin
 {
     internal new static ManualLogSource Logger;
@@ -29,7 +29,7 @@ public class Plugin : BaseUnityPlugin
         Logger.LogInfo("Loaded LCBeatBoxerMod AssetBundle");
         allAssets = assetBundle.LoadAsset<AllAssets>("Assets/LCBeatBoxerMod/ScriptableObjects/AllAssets.asset");
 
-        myConfig = new(base.Config);
+        myConfig = new(Config);
         Configs.DisplayConfigs();
 
         Harmony harmony = new Harmony("LCBeatBoxerMod");
@@ -47,6 +47,23 @@ public class Plugin : BaseUnityPlugin
     public static bool ConvertToBool(string value)
     {
         return value.ToLower() == "true";
+    }
+
+    public static int GetEnemyIndexInRoundManager(EnemyAI enemy)
+    {
+        int toReturn = 0;
+        if (enemy != null)
+        {
+            for (int i = 0; i < RoundManager.Instance.SpawnedEnemies.Count; i++)
+            {
+                if (RoundManager.Instance.SpawnedEnemies[i] == enemy)
+                {
+                    toReturn = i;
+                    break;
+                }
+            }
+        }
+        return toReturn;
     }
 
     public static int DebugLogLevel()

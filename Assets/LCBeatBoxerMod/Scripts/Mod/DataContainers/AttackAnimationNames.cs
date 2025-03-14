@@ -3,5 +3,6 @@ public enum AttackAnimationNames
     BoxerHighPunch,
     BoxerLowSweep,
     BoxerUppercut,
-    BoxerStun
+    BoxerStun,
+    BoxerFakeOut
 }

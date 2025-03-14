@@ -1692,10 +1692,12 @@ MonoBehaviour:
   mainScript: {fileID: -102812192422783989}
   allHitboxes: []
   hitboxCollider: {fileID: 0}
+  managerHitbox: {fileID: 0}
   attackPower: 0
   attackForce: {x: 0, y: 0, z: 0}
   deathAnimIndex: 0
-  managerHitbox: {fileID: 0}
+  canHitPlayers: 0
+  canHitEnemies: 0
 --- !u!1 &4163654431449901847
 GameObject:
   m_ObjectHideFlags: 0
@@ -2066,7 +2068,7 @@ MonoBehaviour:
     startedSearchAtSelf: 0
     searchWidth: 200
     searchPrecision: 7
-    randomized: 0
+    randomized: 1
     onlySearchNodesInLOS: 0
   DebugEnemy: 0
   stunnedIndefinitely: 0
@@ -2081,6 +2083,41 @@ MonoBehaviour:
   hideSpeed: 12
   chaseSpeed: 8
   enragedSpeed: 9
+  roamingSearch:
+    unsearchedNodes: []
+    currentTargetNode: {fileID: 0}
+    nextTargetNode: {fileID: 0}
+    waitingForTargetNode: 0
+    choseTargetNode: 0
+    currentSearchStartPosition: {x: 0, y: 0, z: 0}
+    loopSearch: 1
+    timesFinishingSearch: 0
+    nodesEliminatedInCurrentSearch: 0
+    inProgress: 0
+    calculatingNodeInSearch: 0
+    startedSearchAtSelf: 0
+    searchWidth: 100
+    searchPrecision: 8
+    randomized: 1
+    onlySearchNodesInLOS: 0
+  investigateSearch:
+    unsearchedNodes: []
+    currentTargetNode: {fileID: 0}
+    nextTargetNode: {fileID: 0}
+    waitingForTargetNode: 0
+    choseTargetNode: 0
+    currentSearchStartPosition: {x: 0, y: 0, z: 0}
+    loopSearch: 0
+    timesFinishingSearch: 0
+    nodesEliminatedInCurrentSearch: 0
+    inProgress: 0
+    calculatingNodeInSearch: 0
+    startedSearchAtSelf: 0
+    searchWidth: 40
+    searchPrecision: 4
+    randomized: 0
+    onlySearchNodesInLOS: 0
+  lerpMidpoint: 0.3
   seeDistance: 60
   seeWidth: 50
   awarenessDistancePerState: 280000000f00000019000000
@@ -2102,7 +2139,7 @@ MonoBehaviour:
   successCheer: {fileID: 8300000, guid: c6e2c371704332047aeba6786c608706, type: 3}
   itemToSpawn: {fileID: 11400000, guid: 6ab0024e3635ef74493944b82417bfc1, type: 2}
   linkedItem: {fileID: 0}
-  holdItemParentObject: {fileID: 200825457234022065}
+  holdItemParentObject: {fileID: 539428502012909694}
   maxSearchDistance: 80
   minDistanceBetweenFarawayNodes: 25
   maxDistanceBetweenFarawayNodes: 45
@@ -2116,6 +2153,7 @@ MonoBehaviour:
   debugNodeLightPrefab: {fileID: 1865685499221975325, guid: a055e07f038c38c4181d05e4f1949189,
     type: 3}
   debugEyeForward: {fileID: 609651653745077020}
+  debugInvestigateNoises: 0
 --- !u!195 &1797959732338270114
 NavMeshAgent:
   m_ObjectHideFlags: 0

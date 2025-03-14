@@ -472,8 +472,8 @@ MonoBehaviour:
   minRange: 1
   requiresLineOfSight: 1
   headerText: Boxing Ring Bell
-  subText: 'Value: 300'
-  scrapValue: 300
+  subText: 
+  scrapValue: 0
   creatureScanID: -1
   nodeType: 2
 --- !u!1 &9092689995592862025
@@ -536,7 +536,7 @@ MonoBehaviour:
   floorYRot: 0
   fallTime: 0
   hasHitGround: 0
-  scrapValue: 300
+  scrapValue: 0
   itemUsedUp: 0
   playerHeldBy: {fileID: 0}
   isPocketed: 0

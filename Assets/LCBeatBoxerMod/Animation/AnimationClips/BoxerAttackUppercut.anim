@@ -1856,7 +1856,25 @@ AnimationClip:
         time: 0.5
         value: 10
         inSlope: 599.9995
-        outSlope: 56.603775
+        outSlope: 0
+        tangentMode: 69
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1.0166667
+        value: 10
+        inSlope: -0
+        outSlope: -600.00055
+        tangentMode: 69
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1.0333333
+        value: 0
+        inSlope: -600.00055
+        outSlope: 0
         tangentMode: 69
         weightedMode: 0
         inWeight: 0
@@ -2052,6 +2070,69 @@ AnimationClip:
       m_RotationOrder: 4
     attribute: attackForce.z
     path: SpineLower/BodyHitbox
+    classID: 114
+    script: {fileID: 11500000, guid: e4342ed3ca475314582a4403033f7529, type: 3}
+    flags: 0
+  - serializedVersion: 2
+    curve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 69
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    attribute: attackPower
+    path: SpineLower/SpineMiddleLegs/SpineMiddleArms/SpineUpper/Shoulders/ArmRightUpper/ArmRightLower/HandRight/HandRight_end/HitboxHandRight
+    classID: 114
+    script: {fileID: 11500000, guid: e4342ed3ca475314582a4403033f7529, type: 3}
+    flags: 0
+  - serializedVersion: 2
+    curve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 69
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    attribute: attackPower
+    path: SpineLower/SpineMiddleLegs/SpineMiddleArms/SpineUpper/Shoulders/ExtraLeftUpper/ExtraLeftLower/LeftExtra/LeftExtra_end/HitboxExtraLeft
+    classID: 114
+    script: {fileID: 11500000, guid: e4342ed3ca475314582a4403033f7529, type: 3}
+    flags: 0
+  - serializedVersion: 2
+    curve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 69
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    attribute: attackPower
+    path: SpineLower/SpineMiddleLegs/SpineMiddleArms/SpineUpper/Shoulders/ExtraRightUpper/ExtraRightLower/RightExtra/RightExtra_end/HitboxExtraRight
     classID: 114
     script: {fileID: 11500000, guid: e4342ed3ca475314582a4403033f7529, type: 3}
     flags: 0
@@ -2390,6 +2471,33 @@ AnimationClip:
     - serializedVersion: 2
       path: 140905350
       attribute: 3806281258
+      script: {fileID: 11500000, guid: e4342ed3ca475314582a4403033f7529, type: 3}
+      typeID: 114
+      customType: 0
+      isPPtrCurve: 0
+      isIntCurve: 0
+      isSerializeReferenceCurve: 0
+    - serializedVersion: 2
+      path: 2326396358
+      attribute: 3228933970
+      script: {fileID: 11500000, guid: e4342ed3ca475314582a4403033f7529, type: 3}
+      typeID: 114
+      customType: 0
+      isPPtrCurve: 0
+      isIntCurve: 0
+      isSerializeReferenceCurve: 0
+    - serializedVersion: 2
+      path: 1786322476
+      attribute: 3228933970
+      script: {fileID: 11500000, guid: e4342ed3ca475314582a4403033f7529, type: 3}
+      typeID: 114
+      customType: 0
+      isPPtrCurve: 0
+      isIntCurve: 0
+      isSerializeReferenceCurve: 0
+    - serializedVersion: 2
+      path: 3387036177
+      attribute: 3228933970
       script: {fileID: 11500000, guid: e4342ed3ca475314582a4403033f7529, type: 3}
       typeID: 114
       customType: 0
@@ -7880,7 +7988,25 @@ AnimationClip:
         time: 0.5
         value: 10
         inSlope: 599.9995
-        outSlope: 56.603775
+        outSlope: 0
+        tangentMode: 69
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1.0166667
+        value: 10
+        inSlope: -0
+        outSlope: -600.00055
+        tangentMode: 69
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1.0333333
+        value: 0
+        inSlope: -600.00055
+        outSlope: 0
         tangentMode: 69
         weightedMode: 0
         inWeight: 0
@@ -8076,6 +8202,69 @@ AnimationClip:
       m_RotationOrder: 4
     attribute: attackForce.z
     path: SpineLower/BodyHitbox
+    classID: 114
+    script: {fileID: 11500000, guid: e4342ed3ca475314582a4403033f7529, type: 3}
+    flags: 0
+  - serializedVersion: 2
+    curve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 69
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    attribute: attackPower
+    path: SpineLower/SpineMiddleLegs/SpineMiddleArms/SpineUpper/Shoulders/ArmRightUpper/ArmRightLower/HandRight/HandRight_end/HitboxHandRight
+    classID: 114
+    script: {fileID: 11500000, guid: e4342ed3ca475314582a4403033f7529, type: 3}
+    flags: 0
+  - serializedVersion: 2
+    curve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 69
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    attribute: attackPower
+    path: SpineLower/SpineMiddleLegs/SpineMiddleArms/SpineUpper/Shoulders/ExtraLeftUpper/ExtraLeftLower/LeftExtra/LeftExtra_end/HitboxExtraLeft
+    classID: 114
+    script: {fileID: 11500000, guid: e4342ed3ca475314582a4403033f7529, type: 3}
+    flags: 0
+  - serializedVersion: 2
+    curve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 69
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    attribute: attackPower
+    path: SpineLower/SpineMiddleLegs/SpineMiddleArms/SpineUpper/Shoulders/ExtraRightUpper/ExtraRightLower/RightExtra/RightExtra_end/HitboxExtraRight
     classID: 114
     script: {fileID: 11500000, guid: e4342ed3ca475314582a4403033f7529, type: 3}
     flags: 0

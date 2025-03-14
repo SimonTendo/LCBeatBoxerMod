@@ -155,10 +155,12 @@ MonoBehaviour:
   mainScript: {fileID: 0}
   allHitboxes: []
   hitboxCollider: {fileID: 6211271338446916810}
+  managerHitbox: {fileID: 0}
   attackPower: 0
   attackForce: {x: 0, y: 0, z: 0}
   deathAnimIndex: 0
-  managerHitbox: {fileID: 0}
+  canHitPlayers: 1
+  canHitEnemies: 1
 --- !u!65 &6211271338446916810
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -385,10 +387,12 @@ MonoBehaviour:
   - {fileID: 2224081466137309978}
   - {fileID: 1340080420101069200}
   hitboxCollider: {fileID: 0}
+  managerHitbox: {fileID: 0}
   attackPower: 0
   attackForce: {x: 0, y: 0, z: 0}
   deathAnimIndex: 0
-  managerHitbox: {fileID: 0}
+  canHitPlayers: 0
+  canHitEnemies: 0
 --- !u!1 &681188406125837112
 GameObject:
   m_ObjectHideFlags: 0
@@ -775,10 +779,12 @@ MonoBehaviour:
   mainScript: {fileID: 0}
   allHitboxes: []
   hitboxCollider: {fileID: 493433253901888269}
+  managerHitbox: {fileID: 0}
   attackPower: 0
   attackForce: {x: 0, y: 0, z: 0}
   deathAnimIndex: 0
-  managerHitbox: {fileID: 0}
+  canHitPlayers: 1
+  canHitEnemies: 1
 --- !u!65 &493433253901888269
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -937,7 +943,8 @@ GameObject:
   - component: {fileID: 5383621507121151516}
   - component: {fileID: 2470866491542018346}
   - component: {fileID: 3776509475247150583}
-  m_Layer: 0
+  - component: {fileID: 8759092983715008418}
+  m_Layer: 19
   m_Name: BoxerEnemy
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1052,7 +1059,7 @@ MonoBehaviour:
   ventAnimationFinished: 0
   isEnemyDead: 0
   daytimeEnemyLeaving: 0
-  enemyHP: 30
+  enemyHP: 35
   nodesTempArray: []
   openDoorSpeedMultiplier: 0
   useSecondaryAudiosOnAnimatedObjects: 0
@@ -1086,7 +1093,7 @@ MonoBehaviour:
   minTargetDistance: 5
   maxTargetDistance: 12
   calculateMovementInterval: 0.4
-  distanceToLosePlayer: 33
+  distanceToLoseTarget: 33
   timeWithoutTargetToReset: 15
   accelerationPerState:
   - 1.25
@@ -1108,11 +1115,6 @@ MonoBehaviour:
   spotlightSFX: {fileID: 8300000, guid: 4d89f7b7a5b86134ca94e07034c2106d, type: 3}
   crowdStartCheer: {fileID: 8300000, guid: e4f895becbd11064a8f5a21d902ce8fd, type: 3}
   crowdKillCheer: {fileID: 8300000, guid: e6d66e0dc295b8a44b4d5ff2c6b3f7db, type: 3}
-  crowdHubbubs:
-  - {fileID: 8300000, guid: 1a9b1aa234f0e97429cbe8d0fc9b0a5a, type: 3}
-  - {fileID: 8300000, guid: 749ed28ed7fef194f8d1c7e80b7a0126, type: 3}
-  - {fileID: 8300000, guid: 0a9f1016f9edc1f45a8522c017de2a81, type: 3}
-  - {fileID: 8300000, guid: cd4950c01fe58b84e9bcf8b8e81570f3, type: 3}
   minTargetFocusTime: 3.3
   localPlayerLikeMeter: 0
   feedforwardThreshold: 4
@@ -1139,26 +1141,66 @@ MonoBehaviour:
   interactScript: {fileID: 73171948681784212}
   checkItemGiveInterval: 1
   vulnerable: 1
+  enragedThreshold: 20
   collisionCooldown: 2
   collisionDistance: 2.25
-  stunTime: 0
+  collisionDistanceEnemies: 4
+  stunTimeDefault: 2
+  stunTimeBonus: 0.25
   managerHitbox: {fileID: 3756736900842020631}
+  currentAttackIndex: -1
+  currentAttack: {fileID: 0}
   currentAttackSequence: {fileID: 11400000, guid: 6d3dde3698180c642887abf59b8abd82,
     type: 2}
-  stunTimePerAttackEnum:
-  - 1.5
-  - 2
-  - 1
-  - 3
+  allAttackSequences:
+  - {fileID: 11400000, guid: 6d3dde3698180c642887abf59b8abd82, type: 2}
+  - {fileID: 11400000, guid: 7634e6fb2cf32cd439fafa2741b27dba, type: 2}
   shovelParent: {fileID: 5723987863304232398}
   heldShovel: {fileID: 0}
   holdPlayerParent: {fileID: 4047277351632687094}
   turnPlayerIterations: 10
-  enemySpotlight: {fileID: 3941783261035025668}
-  playerSpotlight: {fileID: 3569565970284079580}
+  currentTarget: {fileID: 0}
   targetEnemy: {fileID: 0}
+  enemySpotlight: {fileID: 3941783261035025668}
+  targetSpotlight: {fileID: 3569565970284079580}
+  threatThreshold:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 25
+      inSlope: -26
+      outSlope: -26
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: -1
+      inSlope: -26
+      outSlope: -26
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  checkEnemiesEveryXSeconds: 2
+  statePrioritizePlayers: 010001
+  unfightableEnemies:
+  - Blob
+  - Butler Bees
+  - Clay Surgeon
+  - Docile Locust Bees
+  - Girl
+  - Lasso
+  - Red Locust Bees
+  - Red pill
+  - Earth Leviathan
   bellItem: {fileID: 11400000, guid: ff725b864a25e7c489350a1817881db6, type: 2}
-  bellValue: 300
+  bellValue: 500
   debugNestPrefab: {fileID: 4514253694177814320}
   debugEyeForward: {fileID: 9000221730976461334}
 --- !u!195 &2470866491542018346
@@ -1203,6 +1245,27 @@ MonoBehaviour:
   SpawnWithObservers: 1
   DontDestroyWithOwner: 1
   AutoObjectParentSync: 1
+--- !u!65 &8759092983715008418
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2719390617343005816}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 2, y: 2, z: 2}
+  m_Center: {x: 0, y: 1, z: 0}
 --- !u!1 &2834605080562012761
 GameObject:
   m_ObjectHideFlags: 0
@@ -2399,10 +2462,12 @@ MonoBehaviour:
   mainScript: {fileID: 0}
   allHitboxes: []
   hitboxCollider: {fileID: 3234617712077181981}
+  managerHitbox: {fileID: 0}
   attackPower: 0
   attackForce: {x: 0, y: 0, z: 0}
   deathAnimIndex: 0
-  managerHitbox: {fileID: 0}
+  canHitPlayers: 1
+  canHitEnemies: 1
 --- !u!65 &3234617712077181981
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -3519,10 +3584,12 @@ MonoBehaviour:
   mainScript: {fileID: 0}
   allHitboxes: []
   hitboxCollider: {fileID: 7924183746865422939}
+  managerHitbox: {fileID: 0}
   attackPower: 0
   attackForce: {x: 0, y: 0, z: 0}
   deathAnimIndex: 0
-  managerHitbox: {fileID: 0}
+  canHitPlayers: 1
+  canHitEnemies: 1
 --- !u!65 &7924183746865422939
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -3751,10 +3818,12 @@ MonoBehaviour:
   mainScript: {fileID: 0}
   allHitboxes: []
   hitboxCollider: {fileID: 5477353265000854145}
+  managerHitbox: {fileID: 0}
   attackPower: 0
   attackForce: {x: 0, y: 0, z: 0}
   deathAnimIndex: 0
-  managerHitbox: {fileID: 0}
+  canHitPlayers: 1
+  canHitEnemies: 0
 --- !u!136 &5477353265000854145
 CapsuleCollider:
   m_ObjectHideFlags: 0

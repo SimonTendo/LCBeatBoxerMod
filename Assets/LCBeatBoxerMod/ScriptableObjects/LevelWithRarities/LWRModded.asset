@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f2736580e5eef6b458ab5c77ad483dd5, type: 3}
-  m_Name: LWR0Experimentation
+  m_Name: LWRModded
   m_EditorClassIdentifier: 
-  levelID: 0
+  levelID: -1
   enemiesWithRarities:
   - enemyType: {fileID: 11400000, guid: 79b360ca0a4c6034bb4a6262b31d49f2, type: 2}
-    rarity: 1
+    rarity: 33
   - enemyType: {fileID: 11400000, guid: b74b7ae25c47ee0468d6c06ca5d2d6de, type: 2}
-    rarity: 1
+    rarity: 33

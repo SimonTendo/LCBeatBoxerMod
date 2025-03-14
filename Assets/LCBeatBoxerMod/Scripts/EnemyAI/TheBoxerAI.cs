@@ -1,11 +1,13 @@
+using System.Linq;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Animations.Rigging;
 using Unity.Netcode;
 using GameNetcodeStuff;
 using BepInEx.Logging;
 
-public class TheBoxerAI : EnemyAI
+public class TheBoxerAI : EnemyAI, IVisibleThreat
 {
     private static ManualLogSource Logger = Plugin.Logger;
     private static int debugLogLevel = -1;
@@ -18,14 +20,15 @@ public class TheBoxerAI : EnemyAI
     private float timeLastTurningTo;
     private float timeLastCollisionLocalPlayer;
     private float timeLastSwitchingTarget;
-    private float timeLastSeeingPlayer;
+    private float timeLastSeeingTarget;
+    private float timeLastCheckedForEnemies;
     private Vector3 turnTo;
     private int animState;
     private float headTargetWeight;
     private bool inSpecialAnimationPreVulnerable;
     private Vector3 specialAnimVelocity;
     private bool heldShovelLastInterval;
-    private bool initiatedHostileToLocalPlayer;
+    private int docileLastIntervalPlayerHP;
 
     [Space(3f)]
     [Header("MOVEMENT")]
@@ -34,7 +37,7 @@ public class TheBoxerAI : EnemyAI
     public float maxTargetDistance;
     public float calculateMovementInterval;
     private float calculateMovementTimer;
-    public float distanceToLosePlayer;
+    public float distanceToLoseTarget;
     public float timeWithoutTargetToReset;
     public float[] accelerationPerState;
     public TwoBoneIKConstraint headIK;
@@ -62,7 +65,6 @@ public class TheBoxerAI : EnemyAI
     public AudioClip spotlightSFX;
     public AudioClip crowdStartCheer;
     public AudioClip crowdKillCheer;
-    public AudioClip[] crowdHubbubs;
 
     [Space(3f)]
     [Header("PARAMETERS")]
@@ -101,22 +103,33 @@ public class TheBoxerAI : EnemyAI
     [Space(3f)]
     [Header("HOSTILE")]
     public bool vulnerable;
+    public int enragedThreshold;
     public float collisionCooldown;
     public float collisionDistance;
-    public float stunTime;
+    public float collisionDistanceEnemies;
+    public float stunTimeDefault;
+    public float stunTimeBonus;
     public HitboxScript managerHitbox;
+    public int currentAttackIndex;
+    public AttackData currentAttack;
     public AttackSequence currentAttackSequence;
-    private int currentAttackIndex;
-    public float[] stunTimePerAttackEnum;
+    public AttackSequence[] allAttackSequences;
     [Space]
     public Transform shovelParent;
     public Shovel heldShovel;
     public Transform holdPlayerParent;
     public int turnPlayerIterations;
-    public Light enemySpotlight;
-    public Light playerSpotlight;
     [Space]
+    public GameObject currentTarget;
+    private GameObject previousTarget;
     public EnemyAI targetEnemy;
+    public Light enemySpotlight;
+    public Light targetSpotlight;
+    public AnimationCurve threatThreshold;
+    public int checkEnemiesEveryXSeconds;
+    public bool[] statePrioritizePlayers;
+    public string[] unfightableEnemies;
+    [Space]
     public Item bellItem;
     public int bellValue;
 
@@ -125,6 +138,7 @@ public class TheBoxerAI : EnemyAI
     public GameObject debugNestPrefab;
     public static GameObject nestObject;
     public GameObject debugEyeForward;
+    ThreatType IVisibleThreat.type => ThreatType.ForestGiant;
 
     public override void Start()
     {
@@ -144,10 +158,10 @@ public class TheBoxerAI : EnemyAI
         enemySpotlight.shadows = LightShadows.None;
         SetSpotlight(enemySpotlight, false);
 
-        playerSpotlight.intensity = 5000;
-        playerSpotlight.range = 25;
-        playerSpotlight.shadows = LightShadows.None;
-        SetSpotlight(playerSpotlight, false, false);
+        targetSpotlight.intensity = 5000;
+        targetSpotlight.range = 25;
+        targetSpotlight.shadows = LightShadows.None;
+        SetSpotlight(targetSpotlight, false, false);
 
         if (debugLogLevel == -1)
         {
@@ -205,19 +219,24 @@ public class TheBoxerAI : EnemyAI
         debugEyeForward.transform.position = eye.position + eye.forward * 2;
         if (stunNormalizedTimer > 0)
         {
-            if (animState != 4)
+            if (animState != GetIntOfAnimState("Stunned", true, false))
             {
                 Log("STUN - START!!", 3);
                 SetAnimation("Stunned", IsOwner, true, true);
+                DisableAllHitboxes(false);
             }
         }
         else
         {
-            if (animState == 4)
+            if (animState == GetIntOfAnimState("Stunned", true, false))
             {
                 Log("STUN - END!!", 3);
                 SetEnemyVulnerable(false);
                 SetAnimation("Stunned", false, true, false);
+                if (IsOwner && GetEnraged() && currentAttackSequence != allAttackSequences[1])
+                {
+                    SetAttackSequence(1);
+                }
             }
         }
         headIK.weight = Mathf.Lerp(headIK.weight, headTargetWeight, 0.1f);
@@ -236,6 +255,7 @@ public class TheBoxerAI : EnemyAI
                     interactScript.gameObject.SetActive(false);
                 }
                 enemyType.pushPlayerForce = 8f;
+                docileLastIntervalPlayerHP = 0;
                 TurnToLookAt();
                 break;
             case 1:
@@ -248,15 +268,13 @@ public class TheBoxerAI : EnemyAI
                 if (checkItemGiveTimer >= checkItemGiveInterval)
                 {
                     checkItemGiveTimer = 0;
-                    if (targetEnemy == null)
-                    {
-                        CheckInventory();
-                    }
+                    CheckInventory();
                 }
                 else
                 {
                     checkItemGiveTimer += Time.deltaTime;
                 }
+                CalculateTargetSpotlight();
                 break;
             case 2:
                 if (interactScript.enabled)
@@ -266,6 +284,7 @@ public class TheBoxerAI : EnemyAI
                     interactScript.gameObject.SetActive(false);
                 }
                 enemyType.pushPlayerForce = 1f;
+                docileLastIntervalPlayerHP = 0;
                 if (inSpecialAnimationWithPlayer != null)
                 {
                     inSpecialAnimationWithPlayer.transform.position = holdPlayerParent.position;
@@ -282,14 +301,15 @@ public class TheBoxerAI : EnemyAI
                         DetectNewSighting(targetPlayer.transform.position, true);
                     }
                 }
-                if (targetPlayer != null)
+                if (checkItemGiveTimer >= checkItemGiveInterval)
                 {
-                    if (!GetHoldingShovel())
-                    {
-                        playerSpotlight.transform.position = targetPlayer.transform.position + Vector3.up * 15;
-                    }
+                    checkItemGiveTimer = 0;
                 }
                 else
+                {
+                    checkItemGiveTimer += Time.deltaTime;
+                }
+                if (!CalculateTargetSpotlight())
                 {
                     TurnToLookAt();
                 }
@@ -306,7 +326,7 @@ public class TheBoxerAI : EnemyAI
         }
         if (StartOfRound.Instance.allPlayersDead)
         {
-            if (animState != 0)
+            if (animState != GetIntOfAnimState("Sitting", printDebug: false))
             {
                 SetAnimation("Sitting");
             }
@@ -314,7 +334,7 @@ public class TheBoxerAI : EnemyAI
         }
         if (stunNormalizedTimer > 0)
         {
-            timeLastSeeingPlayer = Time.realtimeSinceStartup;
+            timeLastSeeingTarget = Time.realtimeSinceStartup;
             agent.speed = 0;
             return;
         }
@@ -328,19 +348,41 @@ public class TheBoxerAI : EnemyAI
             }
             return;
         }
-        PlayerControllerB[] allSeenPlayers = GetAllPlayersInLineOfSight(seeWidth, seeDistance);
+        PlayerControllerB[] allSeenPlayers = GetAllPlayersInLineOfSight(seeWidth, seeDistance, eye);
+        EnemyAI[] allSeenEnemies = null;
+        if (Time.realtimeSinceStartup - timeLastCheckedForEnemies > checkEnemiesEveryXSeconds)
+        {
+            timeLastCheckedForEnemies = Time.realtimeSinceStartup;
+            allSeenEnemies = GetAllEnemiesInLineOfSight(seeWidth, seeDistance, eye);
+        }
         switch (currentBehaviourStateIndex)
         {
             case 0:
                 if (allSeenPlayers != null)
                 {
-                    timeLastSeeingPlayer = Time.realtimeSinceStartup;
+                    timeLastSeeingTarget = Time.realtimeSinceStartup;
                 }
                 else
                 {
                     LogAI("A");
                     SetTargetPlayer(null);
-                    if (Time.realtimeSinceStartup - timeLastSeeingPlayer > timeWithoutTargetToReset)
+                    if (allSeenEnemies != null)
+                    {
+                        float threatThresholdNow = threatThreshold.Evaluate(TimeOfDay.Instance.normalizedTimeOfDay);
+                        LogAI($"threshold now = {threatThresholdNow}");
+                        EnemyAI highestThreat = GetHighestThreatEnemy(allSeenEnemies);
+                        if (highestThreat != null)
+                        {
+                            float threatLevel = GetThreatLevelOfEnemy(highestThreat);
+                            if (GetEnraged() || threatLevel > threatThresholdNow)
+                            {
+                                GoIntoHostile(null, highestThreat, true);
+                                Log($"owner switching STATE, not performing rest of previousBehaviorState({previousBehaviourStateIndex})", 2);
+                                break;
+                            }
+                        }
+                    }
+                    if (Time.realtimeSinceStartup - timeLastSeeingTarget > timeWithoutTargetToReset)
                     {
                         if (enemySpotlight.enabled)
                         {
@@ -349,7 +391,7 @@ public class TheBoxerAI : EnemyAI
                         float nestDistance = Vector3.Distance(transform.position, favoriteSpot.position);
                         if (nestDistance > minTargetDistance)
                         {
-                            if (animState != 1)
+                            if (animState != GetIntOfAnimState("Hunched"))
                             {
                                 SetAnimation("Hunched");
                             }
@@ -369,6 +411,7 @@ public class TheBoxerAI : EnemyAI
                     }
                     break;
                 }
+                LogAI("C");
                 if (SetTargetPlayer(GetClosestSeenPlayerEye(allSeenPlayers, true)))
                 {
                     Log($"owner switching OWNERSHIP, not performing rest of currentBehaviorState({currentBehaviourStateIndex})", 3);
@@ -384,7 +427,7 @@ public class TheBoxerAI : EnemyAI
                         break;
                     }
                 }
-                else if (Time.realtimeSinceStartup - timeLastSeeingPlayer > minTargetFocusTime)
+                else if (Time.realtimeSinceStartup - timeLastSeeingTarget > minTargetFocusTime)
                 {
                     LogAI("3");
                     DoIdleSit();
@@ -393,33 +436,80 @@ public class TheBoxerAI : EnemyAI
             case 1:
                 if (targetEnemy != null)
                 {
-                    if (targetEnemy.isEnemyDead || (targetPlayer != null && targetPlayer.inAnimationWithEnemy != targetEnemy))
+                    if (targetEnemy.isEnemyDead)
+                    {
+                        SetTargetEnemy(null);
+                        break;
+                    }
+                    if (targetPlayer != null && targetPlayer.inAnimationWithEnemy != null && targetPlayer.inAnimationWithEnemy != targetEnemy)
                     {
                         SetTargetEnemy(targetPlayer.inAnimationWithEnemy);
                         break;
                     }
+                    timeLastSeeingTarget = Time.realtimeSinceStartup; 
                     float distanceToEnemy = Vector3.Distance(transform.position, targetEnemy.transform.position);
-                    if (distanceToEnemy < collisionDistance * 2)
+                    if (distanceToEnemy < collisionDistanceEnemies)
                     {
-                        SetAnimation("BoxerStun");
+                        if (targetPlayer != null && targetPlayer.inAnimationWithEnemy == targetEnemy)
+                        {
+                            SetAnimation("BoxerStun");
+                        }
+                        else
+                        {
+                            PerformPlayerCollision(null, targetEnemy);
+                        }
                     }
                     else
                     {
                         CalculateSpeedToDestination(targetEnemy.transform, false);
+                        if (distanceLastIntervalTarget > distanceToLoseTarget)
+                        {
+                            LogAI("VII");
+                            SetTargetEnemy(null);
+                            break;
+                        }
                         SetDestinationToPosition(targetEnemy.transform.position);
                     }
                     break;
                 }
                 if (targetPlayer != null && targetPlayer.isPlayerControlled && !targetPlayer.isInsideFactory && !(StartOfRound.Instance.hangarDoorsClosed && isInsidePlayerShip != targetPlayer.isInHangarShipRoom))
                 {
-                    if (targetEnemy == null && targetPlayer.inAnimationWithEnemy != null)
+                    if (targetEnemy == null)
                     {
-                        SetWavingGoodbye(false, true);
-                        ClearInventory();
-                        SetTargetEnemy(targetPlayer.inAnimationWithEnemy);
-                        break;
+                        EnemyAI setEnemyTarget = null;
+                        if (targetPlayer.inAnimationWithEnemy != null)
+                        {
+                            setEnemyTarget = targetPlayer.inAnimationWithEnemy;
+                        }
+                        else if (targetPlayer.health < docileLastIntervalPlayerHP)
+                        {
+                            Log($"noticed player getting hurt, going on the attack", 3);
+                            setEnemyTarget = GetEnemyTargetingPlayer(targetPlayer, allSeenEnemies);
+                            if (setEnemyTarget == null)
+                            {
+                                setEnemyTarget = GetClosestSeenEnemyEye(allSeenEnemies, false);
+                            }
+                        }
+                        LogAI($"HP: {targetPlayer.health} | last: {docileLastIntervalPlayerHP}");
+                        docileLastIntervalPlayerHP = targetPlayer.health;
+                        if (setEnemyTarget != null)
+                        {
+                            SetWavingGoodbye(false, true);
+                            ClearInventory();
+                            InitiateAttackSequence();
+                            SetTargetEnemy(setEnemyTarget);
+                            break;
+                        }
                     }
-                    timeLastSeeingPlayer = Time.realtimeSinceStartup;
+                    if (enemySpotlight.enabled)
+                    {
+                        SetSpotlight(enemySpotlight, enableLight: false);
+                    }
+                    if (targetSpotlight.enabled)
+                    {
+                        SetSpotlight(targetSpotlight, enableLight: false);
+                    }
+                    timeLastSeeingTarget = Time.realtimeSinceStartup;
                     bool switchedStateUponArmedPlayer = false;
                     if (allSeenPlayers != null)
                     {
@@ -439,13 +529,13 @@ public class TheBoxerAI : EnemyAI
                         Log($"owner switching STATE, not performing rest of previousBehaviorState({previousBehaviourStateIndex})", 2);
                         break;
                     }
-                    if (animState == 3)
+                    if (animState == GetIntOfAnimState("WaveGoodbye"))
                     {
                         agent.speed = 0;
                         DetectNewSighting(targetPlayer.playerEye.position);
                         break;
                     }
-                    else if (animState == 0)
+                    else if (animState == GetIntOfAnimState("Sitting"))
                     {
                         SetAnimation("Hunched");
                     }
@@ -455,7 +545,7 @@ public class TheBoxerAI : EnemyAI
                         break;
                     }
                     CalculateSpeedToDestination(targetPlayer.playerEye);
-                    if (distanceLastIntervalTarget > distanceToLosePlayer && Time.realtimeSinceStartup - timeLastSeeingPlayer > minTargetFocusTime)
+                    if (distanceLastIntervalTarget > distanceToLoseTarget && Time.realtimeSinceStartup - timeLastSeeingTarget > minTargetFocusTime)
                     {
                         LogAI("II");
                         GoIntoIdle();
@@ -472,11 +562,11 @@ public class TheBoxerAI : EnemyAI
             case 2:
                 if (targetPlayer != null)
                 {
-                    timeLastSeeingPlayer = Time.realtimeSinceStartup;
+                    timeLastSeeingTarget = Time.realtimeSinceStartup;
                     if (!inSpecialAnimation)
                     {
                         CalculateSpeedToDestination(targetPlayer.playerEye, false);
-                        if (!targetPlayer.isPlayerControlled || targetPlayer.isInsideFactory || distanceLastIntervalTarget > distanceToLosePlayer || (StartOfRound.Instance.hangarDoorsClosed && isInsidePlayerShip != targetPlayer.isInHangarShipRoom))
+                        if (!targetPlayer.isPlayerControlled || targetPlayer.isInsideFactory || distanceLastIntervalTarget > distanceToLoseTarget || (StartOfRound.Instance.hangarDoorsClosed && isInsidePlayerShip != targetPlayer.isInHangarShipRoom))
                         {
                             LogAI("B");
                             SetTargetPlayer(null);
@@ -488,7 +578,7 @@ public class TheBoxerAI : EnemyAI
                             break;
                         }
                         SetMovingTowardsTargetPlayer(targetPlayer);
-                        if (animState != 2)
+                        if (animState != GetIntOfAnimState("Upright"))
                         {
                             SetAnimation("Upright");
                         }
@@ -498,13 +588,13 @@ public class TheBoxerAI : EnemyAI
                             PerformPlayerCollision(targetPlayer);
                             break;
                         }
-                        if (GetHoldingShovel())
+                        if (currentAttackIndex < 0)
                         {
                             targetPlayer.JumpToFearLevel(0.8f);
                         }
                         else
                         {
-                            if (!initiatedHostileToLocalPlayer)
+                            if (previousTarget != currentTarget)
                             {
                                 InitiateAttackSequence();
                             }
@@ -512,9 +602,9 @@ public class TheBoxerAI : EnemyAI
                             {
                                 SetSpotlight(enemySpotlight);
                             }
-                            if (!playerSpotlight.enabled)
+                            if (!targetSpotlight.enabled)
                             {
-                                SetSpotlight(playerSpotlight);
+                                SetSpotlight(targetSpotlight);
                             }
                         }
                     }
@@ -523,19 +613,59 @@ public class TheBoxerAI : EnemyAI
                         agent.speed = 0;
                     }
                 }
+                else if (targetEnemy != null)
+                {
+                    timeLastSeeingTarget = Time.realtimeSinceStartup;
+                    if (targetEnemy.isEnemyDead || targetEnemy.isOutside != isOutside)
+                    {
+                        SetTargetEnemy(null);
+                        break;
+                    }
+                    CalculateSpeedToDestination(targetEnemy.transform, false);
+                    SetDestinationToPosition(targetEnemy.transform.position);
+                    float distanceFromPlayer = Vector3.Distance(transform.position, targetEnemy.transform.position);
+                    if (distanceFromPlayer < collisionDistanceEnemies && Time.realtimeSinceStartup - timeLastCollisionLocalPlayer > collisionCooldown)
+                    {
+                        PerformPlayerCollision(null, targetEnemy);
+                        break;
+                    }
+                    if (previousTarget != currentTarget)
+                    {
+                        InitiateAttackSequence();
+                    }
+                    if (!enemySpotlight.enabled)
+                    {
+                        SetSpotlight(enemySpotlight);
+                    }
+                    if (!targetSpotlight.enabled)
+                    {
+                        SetSpotlight(targetSpotlight);
+                    }
+                }
                 else
                 {
                     agent.speed = 0;
-                    if (playerSpotlight.enabled)
+                    if (targetSpotlight.enabled)
                     {
-                        SetSpotlight(playerSpotlight, true, false);
+                        SetSpotlight(targetSpotlight, true, false);
                     }
-                    if (allSeenPlayers != null && SetTargetPlayer(GetClosestSeenPlayerEye(allSeenPlayers, true)))
+                    LogAI("D");
+                    if (allSeenPlayers != null && SetTargetPlayer(GetClosestSeenPlayerEye(allSeenPlayers)))
                     {
                         Log($"owner switching OWNERSHIP, not performing rest of currentBehaviorState({currentBehaviourStateIndex})", 3);
                         break;
                     }
-                    if (Time.realtimeSinceStartup - timeLastSeeingPlayer > timeWithoutTargetToReset)
+                    EnemyAI setEnemyTarget = null;
+                    if (allSeenEnemies != null || GetEnraged())
+                    {
+                        setEnemyTarget = GetClosestSeenEnemyEye(allSeenEnemies);
+                    }
+                    if (setEnemyTarget != null)
+                    {
+                        SetTargetEnemy(setEnemyTarget);
+                        break;
+                    }
+                    if (Time.realtimeSinceStartup - timeLastSeeingTarget > timeWithoutTargetToReset)
                     {
                         LogAI("IV");
                         GoIntoIdle();
@@ -543,96 +673,147 @@ public class TheBoxerAI : EnemyAI
                     }
                 }
                 break;
-        }
+            }
         heldShovelLastInterval = GetHoldingShovel();
     }
 
-    private bool GoIntoIdle(PlayerControllerB withTarget = null, bool enableOwnSpotlight = false)
+    private bool GoIntoIdle(PlayerControllerB withPlayer = null, EnemyAI withEnemy = null, bool enableOwnSpotlight = false)
     {
-        bool switchState = false;
         if (!IsOwner)
         {
-            return switchState;
+            return false;
         }
-        if (withTarget == null)
+        bool switchState = false;
+        if (withPlayer == null && withEnemy == null)
         {
-            withTarget = targetPlayer;
+            withPlayer = targetPlayer;
         }
         switchState = currentBehaviourStateIndex != 0;
         LogAI($"switchState? {switchState}");
         if (!switchState)
         {
-            SetTargetPlayer(withTarget);
+            if (withPlayer != null)
+            {
+                LogAI("E");
+                SetTargetPlayer(withPlayer);
+            }
+            if (withEnemy != null)
+            {
+                SetTargetEnemy(withEnemy);
+            }
             return switchState;
         }
-        Log($"switching to: IDLE", 1); 
+        Log($"switching to: IDLE", 1);
+        DisableAllHitboxes();
         SetSpotlight(enemySpotlight, true, enableOwnSpotlight);
-        SetSpotlight(playerSpotlight, true, false);
-        timeLastSeeingPlayer = Time.realtimeSinceStartup;
+        SetSpotlight(targetSpotlight, true, false);
+        timeLastSeeingTarget = Time.realtimeSinceStartup;
         ClearInventory();
         SwitchToBehaviourState(0);
-        SetTargetPlayer(withTarget);
+        if (withPlayer != null)
+        {
+            LogAI("F");
+            SetTargetPlayer(withPlayer);
+        }
+        if (withEnemy != null)
+        {
+            SetTargetEnemy(withEnemy);
+        }
         return switchState;
     }
 
-    private bool GoIntoDocile(PlayerControllerB withTarget = null, bool enableOwnSpotlight = false)
+    private bool GoIntoDocile(PlayerControllerB withPlayer = null, EnemyAI withEnemy = null, bool enableOwnSpotlight = false)
     {
-        bool switchState = false;
         if (!IsOwner)
         {
-            return switchState;
+            return false;
         }
-        if (withTarget == null)
+        bool switchState = false;
+        if (withPlayer == null && withEnemy == null)
         {
-            withTarget = targetPlayer;
+            withPlayer = targetPlayer;
         }
         switchState = currentBehaviourStateIndex != 1;
         LogAI($"switchState? {switchState}");
         if (!switchState)
         {
-            SetTargetPlayer(withTarget);
+            if (withPlayer != null)
+            {
+                LogAI("G");
+                SetTargetPlayer(withPlayer);
+            }
+            if (withEnemy != null)
+            {
+                SetTargetEnemy(withEnemy);
+            }
             return switchState;
         }
         Log($"switching to: DOCILE", 2);
+        DisableAllHitboxes();
         SetSpotlight(enemySpotlight, true, enableOwnSpotlight);
-        SetSpotlight(playerSpotlight, true, false);
+        SetSpotlight(targetSpotlight, true, false);
         ClearInventory();
         SwitchToBehaviourState(1);
-        SetTargetPlayer(withTarget);
+        if (withPlayer != null)
+        {
+            LogAI("H");
+            SetTargetPlayer(withPlayer);
+        }
+        if (withEnemy != null)
+        {
+            SetTargetEnemy(withEnemy);
+        }
         return switchState;
     }
 
-    private bool GoIntoHostile(PlayerControllerB withTarget = null, bool enableOwnSpotlight = false)
+    private bool GoIntoHostile(PlayerControllerB withPlayer = null, EnemyAI withEnemy = null, bool enableOwnSpotlight = false)
     {
-        bool switchState = false;
         if (!IsOwner)
         {
-            return switchState;
+            return false;
         }
-        if (withTarget == null)
+        bool switchState = false;
+        if (withPlayer == null && withEnemy == null)
         {
-            withTarget = targetPlayer;
+            withPlayer = targetPlayer;
         }
         switchState = currentBehaviourStateIndex != 2;
         LogAI($"switchState? {switchState}");
         if (!switchState)
         {
-            SetTargetPlayer(withTarget);
+            if (withPlayer != null)
+            {
+                LogAI("I");
+                SetTargetPlayer(withPlayer);
+            }
+            if (withEnemy != null)
+            {
+                SetTargetEnemy(withEnemy);
+            }
             return switchState;
         }
         Log($"switching to: HOSTILE", 3);
+        DisableAllHitboxes();
         SetWavingGoodbye(false, true);
         PlaySFX(intimidateSFX);
-        SetSpotlight(playerSpotlight, true, false);
+        SetSpotlight(targetSpotlight, true, false);
         ClearInventory();
         SwitchToBehaviourState(2);
-        SetTargetPlayer(withTarget);
+        if (withPlayer != null)
+        {
+            LogAI("J");
+            SetTargetPlayer(withPlayer);
+        }
+        if (withEnemy != null)
+        {
+            SetTargetEnemy(withEnemy);
+        }
         return switchState;
     }
 
     private void DoIdleSit()
     {
-        if (animState != 0)
+        if (animState != GetIntOfAnimState("Sitting", printDebug: false))
         {
             SetAnimation("Sitting");
         }
@@ -678,14 +859,14 @@ public class TheBoxerAI : EnemyAI
         {
             if (targetEnemy != null)
             {
-                targetNode = targetEnemy.eye;
+                targetNode = targetEnemy.eye != null ? targetEnemy.eye : targetEnemy.transform;
             }
             else if (targetPlayer != null)
             {
                 targetNode = targetPlayer.playerEye;
             }
             Vector3 mainTransformOnEye = transform.TransformPoint(transform.InverseTransformPoint(eye.position));
-            if (animState != 3 && targetNode != null && Vector3.Angle(transform.forward, targetNode.position - mainTransformOnEye) > Mathf.Clamp(seeWidth, 0.0f, 33.0f))
+            if (animState != GetIntOfAnimState("WaveGoodbye") && targetNode != null && Vector3.Angle(transform.forward, targetNode.position - mainTransformOnEye) > Mathf.Clamp(seeWidth, 0.0f, 33.0f))
             {
                 targetNode = null;
             }
@@ -793,6 +974,26 @@ public class TheBoxerAI : EnemyAI
         LogAI($"updated localPlayerLikeMeter to {localPlayerLikeMeter} with changeThisInterval {changeThisInterval} for player {targetPlayer}", 1);
     }
 
+    private bool CalculateTargetSpotlight()
+    {
+        if (currentTarget == null || targetSpotlight == null || !targetSpotlight.enabled)
+        {
+            return false;
+        }
+        targetSpotlight.transform.position = currentTarget.transform.position + Vector3.up * 15;
+        return true;
+    }
+
+    private bool GetTargetPriority(bool forPlayers = true)
+    {
+        return forPlayers == statePrioritizePlayers[currentBehaviourStateIndex];
+    }
+
+    private bool GetEnraged()
+    {
+        return enemyHP < enragedThreshold;
+    }
+
     private bool LocalPlayerScoreInterval(float positiveMultiplier = 1.0f, float negativeMultiplier = 1.0f, bool canGoToIdle = false)
     {
         bool scoreSwitchedState = false;
@@ -801,32 +1002,32 @@ public class TheBoxerAI : EnemyAI
             CalculateLocalPlayerScoreChange(positiveMultiplier, negativeMultiplier);
             if (localPlayerLikeMeter > docileThreshold)
             {
-                scoreSwitchedState = GoIntoDocile(targetPlayer, false);
+                scoreSwitchedState = GoIntoDocile(targetPlayer, targetEnemy, false);
             }
-            else if (localPlayerLikeMeter < hostileThreshold)
+            else if (GetEnraged() || localPlayerLikeMeter < hostileThreshold)
             {
                 scoreSwitchedState = GoIntoHostile(targetPlayer);
             }
             else if (localPlayerLikeMeter > feedforwardThreshold && canGoToIdle)
             {
                 LogAI("V");
-                if (animState != 1)
+                if (animState != GetIntOfAnimState("Hunched"))
                 {
                     LogAI($"animState: {animState}");
                     SetAnimation("Hunched");
                 }
-                scoreSwitchedState = GoIntoIdle(targetPlayer, enemySpotlight.enabled);
+                scoreSwitchedState = GoIntoIdle(targetPlayer, targetEnemy, enemySpotlight.enabled);
             }
             else if (localPlayerLikeMeter < feedforwardThreshold && canGoToIdle)
             {
                 LogAI("VI");
-                if (animState != 2)
+                if (animState != GetIntOfAnimState("Upright"))
                 {
                     LogAI($"animState: {animState}");
                     PlaySFX(intimidateSFX);
                     SetAnimation("Upright");
                 }
-                scoreSwitchedState = GoIntoIdle(targetPlayer, enemySpotlight.enabled);
+                scoreSwitchedState = GoIntoIdle(targetPlayer, targetEnemy, enemySpotlight.enabled);
             }
         }
         LogAI($"LocalPlayerScoreInterval() // targetPlayer: {targetPlayer} | scoreSwitchedState: {scoreSwitchedState}", 1);
@@ -849,7 +1050,11 @@ public class TheBoxerAI : EnemyAI
         for (int i = 0; i < seenPlayers.Length; i++)
         {
             PlayerControllerB player = seenPlayers[i];
-            if (!requireLineOfSight || !Physics.Linecast(eye.position + Vector3.up, player.playerEye.position, StartOfRound.Instance.collidersAndRoomMaskAndDefault))
+            if (!player.isPlayerControlled || player.isInsideFactory)
+            {
+                continue;
+            }
+            if (!requireLineOfSight || !Physics.Linecast(eye.position, player.playerEye.position, StartOfRound.Instance.collidersAndRoomMaskAndDefault))
             {
                 tempDist = Vector3.Distance(eye.position, player.playerEye.position);
                 if (tempDist < mostOptimalDistance)
@@ -859,7 +1064,201 @@ public class TheBoxerAI : EnemyAI
                 }
             }
         }
+        LogAI($"GetClosestSeenPlayerEye() returned {result}");
         return result;
+    }
+
+    private EnemyAI[] GetAllEnemiesInLineOfSight(float width = 45, int range = 60, Transform eyeObject = null)
+    {
+        if (eyeObject == null)
+        {
+            eyeObject = eye;
+        }
+
+        if (isOutside && !enemyType.canSeeThroughFog && TimeOfDay.Instance.currentLevelWeather == LevelWeatherType.Foggy)
+        {
+            range = Mathf.Clamp(range, 0, 30);
+        }
+
+        if (RoundManager.Instance == null || RoundManager.Instance.SpawnedEnemies == null || RoundManager.Instance.SpawnedEnemies.Count <= 1)
+        {
+            return null;
+        }
+
+        List<EnemyAI> toReturn = new List<EnemyAI>();
+        for (int i = 0; i < RoundManager.Instance.SpawnedEnemies.Count; i++)
+        {
+            EnemyAI enemy = RoundManager.Instance.SpawnedEnemies[i];
+            if (enemy == null || enemy.enemyType == null || enemy == this || enemy.isEnemyDead || enemy.isOutside != isOutside || !enemy.ventAnimationFinished)
+            {
+                continue;
+            }
+            Vector3 position = enemy.eye != null ? enemy.eye.position : enemy.transform.position;
+            if (Vector3.Distance(eye.position, position) < range && !Physics.Linecast(eyeObject.position, position, StartOfRound.Instance.collidersAndRoomMaskAndDefault, QueryTriggerInteraction.Ignore))
+            {
+                Vector3 to = position - eyeObject.position;
+                if (Vector3.Angle(eyeObject.forward, to) < width)
+                {
+                    LogAI($"adding {enemy}", 2);
+                    toReturn.Add(enemy);
+                }
+            }
+        }
+        if (toReturn.Count > 0)
+        {
+            return toReturn.ToArray();
+        }
+        return null;
+    }
+
+    private EnemyAI GetClosestSeenEnemyEye(EnemyAI[] seenEnemies = null, bool requireLineOfSight = true)
+    {
+        if (seenEnemies == null)
+        {
+            if (RoundManager.Instance == null || RoundManager.Instance.SpawnedEnemies == null || RoundManager.Instance.SpawnedEnemies.Count <= 1)
+            {
+                return null;
+            }
+            Log($"Getting spawnedEnemies from RoundManager in GetEnemyTargetingPlayer()"); 
+            seenEnemies = RoundManager.Instance.SpawnedEnemies.ToArray();
+        }
+        seenEnemies = GetFightableEnemies(seenEnemies);
+        EnemyAI result = null;
+        mostOptimalDistance = (float)seeDistance;
+        for (int i = 0; i < seenEnemies.Length; i++)
+        {
+            EnemyAI enemy = seenEnemies[i];
+            if (enemy == null || enemy == this || enemy.isEnemyDead || enemy.isOutside != isOutside)
+            {
+                continue;
+            }
+            Transform toUse = enemy.eye != null ? enemy.eye : enemy.transform;
+            if (!requireLineOfSight || !Physics.Linecast(eye.position + Vector3.up, toUse.position, StartOfRound.Instance.collidersAndRoomMaskAndDefault))
+            {
+                tempDist = Vector3.Distance(eye.position, toUse.position);
+                if (tempDist < mostOptimalDistance)
+                {
+                    mostOptimalDistance = tempDist;
+                    result = enemy;
+                }
+            }
+        }
+        LogAI($"GetClosestSeenEnemyEye() returned {result}");
+        return result;
+    }
+
+    private EnemyAI GetHighestThreatEnemy(EnemyAI[] seenEnemies = null)
+    {
+        if (seenEnemies == null)
+        {
+            if (RoundManager.Instance == null || RoundManager.Instance.SpawnedEnemies == null || RoundManager.Instance.SpawnedEnemies.Count <= 1)
+            {
+                return null;
+            }
+            Log($"Getting spawnedEnemies from RoundManager in GetEnemyTargetingPlayer()"); 
+            seenEnemies = RoundManager.Instance.SpawnedEnemies.ToArray();
+        }
+        seenEnemies = GetFightableEnemies(seenEnemies); 
+        EnemyAI result = null;
+        float highestThreat = 0.0f;
+        for (int i = 0; i < seenEnemies.Length; i++)
+        {
+            EnemyAI enemy = seenEnemies[i];
+            if (enemy == null || enemy == this || enemy.isEnemyDead || enemy.isOutside != isOutside)
+            {
+                continue;
+            }
+            IVisibleThreat threat = enemy.GetComponent<IVisibleThreat>();
+            if (threat == null)
+            {
+                continue;
+            }
+            float thisEnemyThreat = GetThreatLevelOfEnemy(enemy);
+            if (thisEnemyThreat > highestThreat)
+            {
+                result = enemy;
+                highestThreat = thisEnemyThreat;
+            }
+        }
+        LogAI($"GetHighestThreatEnemy() returned {result}");
+        return result;
+    }
+
+    private float GetThreatLevelOfEnemy(EnemyAI enemy)
+    {
+        if (enemy == null)
+        {
+            return -99.0f;
+        }
+        IVisibleThreat threat = enemy.GetComponent<IVisibleThreat>();
+        if (threat == null)
+        {
+            return -1.0f;
+        }
+        float thisEnemyThreat = (threat.GetThreatLevel(eye.position) + threat.GetInterestLevel()) * threat.GetVisibility();
+        LogAI($"thisEnemyThreat of {enemy} = {thisEnemyThreat}");
+        return thisEnemyThreat;
+    }
+
+    private EnemyAI GetEnemyTargetingPlayer(PlayerControllerB player = null, EnemyAI[] seenEnemies = null)
+    {
+        if (player == null)
+        {
+            player = targetPlayer != null ? targetPlayer : GetClosestPlayer();
+            if (player == null)
+            {
+                Log($"GetEnemyTargetingPlayer failed to find player, returning null", 2);
+                return null;
+            }
+        }
+        if (seenEnemies == null)
+        {
+            if (RoundManager.Instance == null || RoundManager.Instance.SpawnedEnemies == null || RoundManager.Instance.SpawnedEnemies.Count <= 1)
+            {
+                return null;
+            }
+            Log($"Getting spawnedEnemies from RoundManager in GetEnemyTargetingPlayer()");
+            seenEnemies = RoundManager.Instance.SpawnedEnemies.ToArray();
+        }
+        seenEnemies = GetFightableEnemies(seenEnemies); 
+        EnemyAI result = null;
+        List<EnemyAI> enemiesTargetingPlayer = new List<EnemyAI>();
+        for (int i = 0; i < seenEnemies.Length; i++)
+        {
+            EnemyAI enemy = seenEnemies[i];
+            if (enemy == null || enemy == this || enemy.isEnemyDead || enemy.isOutside != isOutside)
+            {
+                continue;
+            }
+            if (enemy.targetPlayer != null && enemy.targetPlayer == player)
+            {
+                enemiesTargetingPlayer.Add(enemy);
+            }
+        }
+        if (enemiesTargetingPlayer.Count == 1)
+        {
+            result = enemiesTargetingPlayer[0];
+        }
+        else if (enemiesTargetingPlayer.Count > 1)
+        {
+            result = GetHighestThreatEnemy(enemiesTargetingPlayer.ToArray());
+        }
+        LogAI($"GetEnemyTargetingPlayer returned {result}");
+        return result;
+    }
+
+    private EnemyAI[] GetFightableEnemies(EnemyAI[] originalList)
+    {
+        List<EnemyAI> enemyList = new List<EnemyAI>();
+        for (int i = 0; i < originalList.Length; i++)
+        {
+            EnemyAI enemy = originalList[i];
+            if (enemy != null && enemy.enemyType != null && !unfightableEnemies.Contains(enemy.enemyType.enemyName))
+            {
+                enemyList.Add(enemy);
+            }
+        }
+        return enemyList.ToArray();
     }
 
     private bool GetHoldingShovel()
@@ -875,7 +1274,7 @@ public class TheBoxerAI : EnemyAI
         return false;
     }
 
-    private bool PlayerIsArmed(PlayerControllerB player = null, bool checkHeldItemOnly = true)
+    private bool PlayerIsArmed(PlayerControllerB player = null, bool checkHeldItemOnly = true, bool countNonOffensive = true)
     {
         if (player == null)
         {
@@ -896,9 +1295,16 @@ public class TheBoxerAI : EnemyAI
             {
                 return true;
             }
-            if (heldObject.GetComponent<Shovel>() || heldObject.GetComponent<KnifeItem>() || heldObject.GetComponent<ShotgunItem>() || heldObject.GetComponent<GunAmmo>() || heldObject.GetComponent<PatcherTool>() || heldObject.GetComponent<StunGrenadeItem>() || heldObject.GetComponent<ExtensionLadderItem>() || heldObject.GetComponent<RadarBoosterItem>() || heldObject.GetComponent<RagdollGrabbableObject>() || heldObject.GetComponent<BeatAudioItem>())
+            if (heldObject.GetComponent<Shovel>() || heldObject.GetComponent<KnifeItem>() || heldObject.GetComponent<ShotgunItem>() || heldObject.GetComponent<PatcherTool>() || heldObject.GetComponent<StunGrenadeItem>() || heldObject.GetComponent<ExtensionLadderItem>() || heldObject.GetComponent<RadarBoosterItem>())
             {
                 return true;
+            }
+            if (countNonOffensive)
+            {
+                if (heldObject.GetComponent<GunAmmo>() || heldObject.GetComponent<RagdollGrabbableObject>() || heldObject.GetComponent<BeatAudioItem>())
+                {
+                    return true;
+                }
             }
         }
         else
@@ -924,7 +1330,7 @@ public class TheBoxerAI : EnemyAI
 
     private void SetWavingGoodbye(bool setTo, bool goToUpright = false, bool sync = true)
     {
-        if (setTo && animState != 3)
+        if (setTo && animState != GetIntOfAnimState("WaveGoodbye"))
         {
             ClearInventory(true, sync);
             SetAnimation("WaveGoodbye", sync);
@@ -957,9 +1363,9 @@ public class TheBoxerAI : EnemyAI
             }
         }
         LogAI($"{emptyInventory} | {animState}");
-        if (targetEnemy == null && emptyInventory && animState == 2)
+        if (targetEnemy == null && emptyInventory && animState == GetIntOfAnimState("Upright"))
         {
-            Log($"counted enemy {name} #{NetworkObjectId} to have emptyInventory {emptyInventory}, going to hunched animation");
+            LogAI($"counted enemy {name} #{NetworkObjectId} to have emptyInventory {emptyInventory}, going to hunched animation");
             SetAnimation("Hunched", false);
         }
         if (StartOfRound.Instance.localPlayerController.currentlyHeldObjectServer == null)
@@ -975,7 +1381,7 @@ public class TheBoxerAI : EnemyAI
             return;
         }
         interactScript.interactable = true;
-        interactScript.hoverTip = "Give item : [ E ]";
+        interactScript.hoverTip = "Give item : [E]";
     }
 
     public void InteractGiveHoldingItem(PlayerControllerB calledBy)
@@ -1129,7 +1535,7 @@ public class TheBoxerAI : EnemyAI
             {
                 RemoveItemFromInventoryLocal(itemSlots[i], i, dropItem);
             }
-            if (sync)
+            if (sync && IsOwner)
             {
                 DropItemInSlotServerRpc((int)GameNetworkManager.Instance.localPlayerController.playerClientId, i, dropItem);
             }
@@ -1230,7 +1636,7 @@ public class TheBoxerAI : EnemyAI
     public override void DetectNoise(Vector3 noisePosition, float noiseLoudness, int timesPlayedInOneSpot = 0, int noiseID = 0)
     {
         base.DetectNoise(noisePosition, noiseLoudness, timesPlayedInOneSpot, noiseID);
-        if (noiseID == 546)
+        if (noiseID == 546 || noiseID == 202252)
         {
             return;
         }
@@ -1316,6 +1722,11 @@ public class TheBoxerAI : EnemyAI
             LogAI($"DetectNoise(): docile");
             return false;
         }
+        if (currentBehaviourStateIndex == 2 && (targetPlayer != null || targetEnemy != null))
+        {
+            LogAI($"DetectNoise(): hostile");
+            return false;
+        }
         return true;
     }
 
@@ -1331,21 +1742,26 @@ public class TheBoxerAI : EnemyAI
     public override void HitEnemy(int force = 1, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitID = -1)
     {
         base.HitEnemy(force, playerWhoHit, playHitSFX, hitID);
-        if (isEnemyDead)
+        if (isEnemyDead || !ventAnimationFinished)
         {
             return;
         }
         bool doRegularHitBehaviour = true;
-        if (currentBehaviourStateIndex != 2 || targetPlayer == null)
+        if (currentBehaviourStateIndex != 2 || (targetPlayer == null && targetEnemy == null))
         {
             GoIntoHostile(playerWhoHit);
         }
-        else if (force <= 2 && (inSpecialAnimationWithPlayer != null || (!vulnerable && stunNormalizedTimer <= 0)))
+        else if ((currentAttack == null || currentAttack.canBlock) && force <= 2 && (inSpecialAnimationWithPlayer != null || (!vulnerable && stunNormalizedTimer <= 0)))
         {
             doRegularHitBehaviour = false;
         }
-        if (doRegularHitBehaviour)
+        if (doRegularHitBehaviour && (currentAttack == null || currentAttack.canStun))
         {
+            float stunTime = currentAttack != null ? currentAttack.stunTime : stunTimeDefault;
+            if (GetEnraged())
+            {
+                stunTime += stunTimeBonus;
+            }
             SetEnemyStunned(true, stunTime, playerWhoHit);
             if (playerWhoHit == GameNetworkManager.Instance.localPlayerController)
             {
@@ -1428,14 +1844,58 @@ public class TheBoxerAI : EnemyAI
     public override void KillEnemy(bool destroy = false)
     {
         base.KillEnemy(destroy);
+        if (destroy)
+        {
+            return;
+        }
+        DisableAllHitboxes(false);
         SetSpotlight(enemySpotlight, false, false);
-        SetSpotlight(playerSpotlight, false, false);
+        SetSpotlight(targetSpotlight, false, false);
         StartCoroutine(PlayBellDings(3, 0.4f, crowdKillCheer));
         if (IsServer)
         {
-            Instantiate(bellItem.spawnPrefab, transform.position + Vector3.up * 2 + transform.right, Quaternion.identity, RoundManager.Instance.spawnedScrapContainer).GetComponent<NetworkObject>().Spawn();
+            GameObject spawnedItem = Instantiate(bellItem.spawnPrefab, transform.position + Vector3.up * 2 + transform.right, Quaternion.identity, RoundManager.Instance.spawnedScrapContainer);
+            NetworkObject netObj = spawnedItem.GetComponent<NetworkObject>();
+            netObj.Spawn();
+            SpawnBellItemClientRpc(netObj);
+            GrabbableObject itemScript = spawnedItem.GetComponent<GrabbableObject>();
+            if (itemScript != null)
+            {
+                itemScript.SetScrapValue(bellValue);
+                RoundManager.Instance.totalScrapValueInLevel += bellValue;
+            }
         }
-        RoundManager.Instance.totalScrapValueInLevel += bellValue;
+    }
+
+    [ClientRpc]
+    private void SpawnBellItemClientRpc(NetworkObjectReference itemNOR)
+    {
+        if (!IsServer)
+        {
+            StartCoroutine(WaitForSpawnedItem(itemNOR));
+        }
+    }
+
+    private IEnumerator WaitForSpawnedItem(NetworkObjectReference itemNOR)
+    {
+        NetworkObject netObj = null;
+        float startTime = Time.realtimeSinceStartup;
+        while (Time.realtimeSinceStartup - startTime < 8 && !itemNOR.TryGet(out netObj))
+        {
+            yield return new WaitForSeconds(0.03f);
+        }
+        if (netObj == null)
+        {
+            Log("Bell: failed to get netObj on client!", 3);
+            yield break;
+        }
+        yield return new WaitForEndOfFrame();
+        GrabbableObject itemScript = netObj.GetComponent<GrabbableObject>();
+        if (itemScript != null)
+        {
+            itemScript.SetScrapValue(bellValue);
+            RoundManager.Instance.totalScrapValueInLevel += bellValue;
+        }
     }
 
     public override void OnCollideWithPlayer(Collider other)
@@ -1451,9 +1911,9 @@ public class TheBoxerAI : EnemyAI
         }
     }
 
-    private void PerformPlayerCollision(PlayerControllerB localPlayer)
+    private void PerformPlayerCollision(PlayerControllerB localPlayer = null, EnemyAI collidedEnemy = null)
     {
-        if (localPlayer.isClimbingLadder)
+        if (localPlayer != null && localPlayer.isClimbingLadder)
         {
             return;
         }
@@ -1463,81 +1923,87 @@ public class TheBoxerAI : EnemyAI
             case 0:
                 break;
             case 1:
+                if (collidedEnemy != null)
+                {
+                    Log($"{name} #{NetworkObjectId} calling PerformNextAttack (enemy: {collidedEnemy} | state: {currentBehaviourStateIndex})");
+                    PerformNextAttack(collidedEnemy.transform);
+                }
                 break;
             case 2:
-                if (localPlayer != targetPlayer)
+                if (localPlayer != null)
                 {
-                    Log($"localPlayer {localPlayer} not targetPlayer {targetPlayer}, breaking");
-                    break;
+                    if (localPlayer != targetPlayer)
+                    {
+                        Log($"localPlayer {localPlayer} not targetPlayer {targetPlayer}, breaking");
+                        break;
+                    }
+                    if (GetHoldingShovel() && !PlayerIsArmed(localPlayer, countNonOffensive: false))
+                    {
+                        Log($"!!!GIVE SHOVEL HERE; heldShovel {heldShovel.name}");
+                        StartCoroutine(StartGiveShovelAnim(localPlayer));
+                    }
+                    else
+                    {
+                        Log($"{name} #{NetworkObjectId} calling PerformNextAttack (player: {localPlayer} | state: {currentBehaviourStateIndex})");
+                        PerformNextAttack(localPlayer.transform);
+                    }
                 }
-                if (GetHoldingShovel())
+                else if (collidedEnemy != null)
                 {
-                    Log($"!!!GIVE SHOVEL HERE; heldShovel {heldShovel.name}");
-                    StartCoroutine(StartGiveShovelAnim(localPlayer));
-                }
-                else
-                {
-                    Log($"{name} #{NetworkObjectId} calling PerformNextAttack");
-                    PerformNextAttack();
+                    Log($"{name} #{NetworkObjectId} calling PerformNextAttack (enemy: {collidedEnemy} | state: {currentBehaviourStateIndex})");
+                    PerformNextAttack(collidedEnemy.transform);
                 }
                 break;
         }
     }
 
-    private void PerformNextAttack()
+    private void PerformNextAttack(Transform turnTo = null)
     {
-        DetectNewSighting(targetPlayer.transform.position, true);
+        if (turnTo != null)
+        {
+            DetectNewSighting(turnTo.position, true);
+        }
         agent.speed = 0;
-        int nextAttackIndex = currentAttackIndex + 1;
-        int clampedAttackIndex = Mathf.Clamp(nextAttackIndex % currentAttackSequence.attacks.Length, 0, currentAttackSequence.attacks.Length - 1);
-        AttackAnimationNames nextAttackTrigger = currentAttackSequence.attacks[clampedAttackIndex];
-        int thisTriggerIndex = Mathf.Clamp((int)nextAttackTrigger, 0, currentAttackSequence.attacks.Length - 1);
-        float nextStunTime = Mathf.Clamp(stunTimePerAttackEnum[thisTriggerIndex % stunTimePerAttackEnum.Length], 0, stunTimePerAttackEnum.Length - 1);
-        SyncAttackAnimation(clampedAttackIndex, nextStunTime, atPos: transform.position);
+        int nextAttackIndex = Mathf.Clamp((currentAttackIndex + 1) % currentAttackSequence.attacks.Length, 0, currentAttackSequence.attacks.Length - 1);
+        SyncAttackAnimation(nextAttackIndex, atPos: transform.position);
     }
 
-    private void SyncAttackAnimation(int ownerAttackIndex, float ownerStunTime, bool sync = true, bool onlySyncParameters = false, bool calculateInitiateAttack = false, Vector3 atPos = default)
+    private void SyncAttackAnimation(int ownerAttackIndex, bool sync = true, bool onlySyncParameters = false, Vector3 atPos = default)
     {
-        if (!IsOwner)
+        SyncAttackAnimationLocal(ownerAttackIndex, onlySyncParameters, atPos);
+        if (sync && IsOwner)
         {
-            return;
-        }
-        SyncAttackAnimationLocal(ownerAttackIndex, ownerStunTime, onlySyncParameters, calculateInitiateAttack, atPos);
-        if (sync)
-        {
-            SyncAttackAnimationServerRpc((int)GameNetworkManager.Instance.localPlayerController.playerClientId, ownerAttackIndex, ownerStunTime, onlySyncParameters, calculateInitiateAttack, atPos);
+            SyncAttackAnimationServerRpc((int)GameNetworkManager.Instance.localPlayerController.playerClientId, ownerAttackIndex, onlySyncParameters, atPos);
         }
     }
 
     [ServerRpc(RequireOwnership = false)]
-    private void SyncAttackAnimationServerRpc(int sentBy, int ownerAttackIndex, float ownerStunTime, bool onlySyncParameters, bool calculateInitiateAttack, Vector3 atPos)
+    private void SyncAttackAnimationServerRpc(int sentBy, int ownerAttackIndex, bool onlySyncParameters, Vector3 atPos)
     {
-        SyncAttackAnimationClientRpc(sentBy, ownerAttackIndex, ownerStunTime, onlySyncParameters, calculateInitiateAttack, atPos);
+        SyncAttackAnimationClientRpc(sentBy, ownerAttackIndex, onlySyncParameters, atPos);
     }
 
     [ClientRpc]
-    private void SyncAttackAnimationClientRpc(int sentBy, int ownerAttackIndex, float ownerStunTime, bool onlySyncParameters, bool calculateInitiateAttack, Vector3 atPos)
+    private void SyncAttackAnimationClientRpc(int sentBy, int ownerAttackIndex, bool onlySyncParameters, Vector3 atPos)
     {
         if (sentBy != (int)GameNetworkManager.Instance.localPlayerController.playerClientId)
         {
-            SyncAttackAnimationLocal(ownerAttackIndex, ownerStunTime, onlySyncParameters, calculateInitiateAttack, atPos);
+            SyncAttackAnimationLocal(ownerAttackIndex, onlySyncParameters, atPos);
         }
     }
 
-    private void SyncAttackAnimationLocal(int nextAttackIndex, float nextStunTime, bool onlySyncParameters = false, bool calculateInitiateAttack = false, Vector3 ownerServerPos = default)
+    private void SyncAttackAnimationLocal(int receivedAttackIndex, bool onlySyncParameters = false, Vector3 ownerServerPos = default)
     {
-        if (calculateInitiateAttack)
-        {
-            initiatedHostileToLocalPlayer = targetPlayer == GameNetworkManager.Instance.localPlayerController;
-            Log($"initiatedHostileToLocalPlayer? {initiatedHostileToLocalPlayer}", 1);
-        }
-        stunTime = nextStunTime;
-        currentAttackIndex = nextAttackIndex;
-        Log($"index: {currentAttackIndex} | stunTime: {stunTime}");
+        currentAttack = null;
+        currentAttackIndex = receivedAttackIndex;
+        Log($"index: {currentAttackIndex}");
         if (onlySyncParameters)
         {
+            Log($"previousTarget: {previousTarget} (currentTarget? {currentTarget})", 1);
+            previousTarget = currentTarget;
             return;
         }
+        currentAttack = currentAttackSequence.attacks[currentAttackIndex];
         managerHitbox.OnAttackStart();
         inSpecialAnimationPreVulnerable = true;
         if (ownerServerPos != default)
@@ -1545,38 +2011,68 @@ public class TheBoxerAI : EnemyAI
             serverPosition = ownerServerPos;
             positionLastInterval = ownerServerPos;
         }
+        DisableAllHitboxes(false);
         SetEnemyInSpecialAnimation(true);
         SetEnemyVulnerable(false);
-        AttackAnimationNames currentAttackTrigger = currentAttackSequence.attacks[currentAttackIndex];
-        Log($"trigger: {currentAttackTrigger}");
         PlaySFX(reelSFX, false, false, false);
-        PlaySFX(crowdHubbubs[(int)currentAttackTrigger % crowdHubbubs.Length], false, true, false);
+        if (currentAttack.creatureSFX != null)
+        {
+            PlaySFX(currentAttack.creatureSFX, sync: false);
+        }
+        if (currentAttack.audienceSFX != null)
+        {
+            PlaySFX(currentAttack.audienceSFX, sync: false, isAudience: true);
+        }
+        AttackAnimationNames currentAttackTrigger = currentAttack.animationName;
+        Log($"trigger: {currentAttackTrigger} | stunTime: {currentAttack.stunTime}");
         SetAnimation(currentAttackTrigger.ToString(), false);
     }
 
-    public bool OnHitSuccessful(int[] hitPlayerIDs)
+    public bool OnHitSuccessful(int[] hitIDs, bool forPlayers)
     {
-        if (hitPlayerIDs == null || hitPlayerIDs.Length == 0)
+        if (hitIDs == null || hitIDs.Length == 0)
         {
             return false;
         }
-        bool killedAnyPlayer = false;
-        for (int i = 0; i < hitPlayerIDs.Length; i++)
+        bool killedAnyTarget = false;
+        for (int i = 0; i < hitIDs.Length; i++)
         {
-            if (StartOfRound.Instance.allPlayerScripts[hitPlayerIDs[i]].isPlayerDead)
+            if (forPlayers)
             {
-                killedAnyPlayer = true;
-                break;
+                if (StartOfRound.Instance.allPlayerScripts[hitIDs[i]].isPlayerDead)
+                {
+                    killedAnyTarget = true;
+                    break;
+                }
+            }
+            else
+            {
+                if (RoundManager.Instance.SpawnedEnemies[hitIDs[i]].isEnemyDead)
+                {
+                    killedAnyTarget = true;
+                    break;
+                }
             }
         }
-        if (!killedAnyPlayer)
+        if (!killedAnyTarget)
         {
             return false;
         }
+        DisableAllHitboxes();
         StartCoroutine(PlayBellDings(5, 0.2f, crowdKillCheer, true));
-        if (targetPlayer.isPlayerDead)
+        if (forPlayers)
         {
-            SetSpotlight(playerSpotlight, true, false);
+            if (targetPlayer.isPlayerDead)
+            {
+                SetSpotlight(targetSpotlight, true, false);
+            }
+        }
+        else
+        {
+            if (targetEnemy.isEnemyDead)
+            {
+                SetSpotlight(targetSpotlight, true, false);
+            }
         }
         SetAnimation("Taunt");
         return true;
@@ -1592,6 +2088,40 @@ public class TheBoxerAI : EnemyAI
     {
         inSpecialAnimation = setinSpecialAnimationTo;
         LogAI($"SetEnemyInSpecialAnimationTo(): inSpecialAnimation = {inSpecialAnimation}");
+    }
+
+    private void DisableAllHitboxes(bool sync = true)
+    {
+        DisableAllHitboxesLocal();
+        if (sync && IsOwner)
+        {
+            DisableAllHitboxesServerRpc((int)StartOfRound.Instance.localPlayerController.playerClientId);
+        }
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void DisableAllHitboxesServerRpc(int sentBy)
+    {
+        DisableAllHitboxesClientRpc(sentBy);
+    }
+
+    [ClientRpc]
+    private void DisableAllHitboxesClientRpc(int sentBy)
+    {
+        if (sentBy != (int)StartOfRound.Instance.localPlayerController.playerClientId)
+        {
+            DisableAllHitboxesLocal();
+        }
+    }
+
+    private void DisableAllHitboxesLocal()
+    {
+        if (managerHitbox == null)
+        {
+            Log($"managerHitbox null in DisableAllHitboxesLocal()!", 3);
+            return;
+        }
+        managerHitbox.DisableAllHitboxes();
     }
 
     public void SpawnShovelAndSync()
@@ -1708,7 +2238,7 @@ public class TheBoxerAI : EnemyAI
         }
         DetectNewSighting(collidedPlayer.transform.position, true);
         SetSpotlight(enemySpotlight);
-        SetSpotlight(playerSpotlight);
+        SetSpotlight(targetSpotlight);
         SetAnimation("GiveShovel");
     }
 
@@ -1782,21 +2312,55 @@ public class TheBoxerAI : EnemyAI
         Log("reached end of GiveShovelLocal()");
         yield return null;
         timeLastCollisionLocalPlayer = Time.realtimeSinceStartup - collisionCooldown + 1;
-        InitiateAttackSequence();
+        InitiateAttackSequence(sync: false);
         yield return new WaitForSeconds(0.33f);
         SetAnimation("Taunt", false);
     }
 
     private void InitiateAttackSequence(bool playAudioVisual = true, bool sync = true)
     {
-        Log("INITIATE ATTACK SEQUENCE!!!", 3);
-        managerHitbox.DisableAllHitboxes();
-        SyncAttackAnimation(-1, 2.5f, sync, true, true);
+        Log("ATTACK SEQUENCE - INITIATE!!", 2);
+        DisableAllHitboxes(sync);
+        SyncAttackAnimation(-1, sync, true);
         if (playAudioVisual)
         {
             SetSpotlight(enemySpotlight, sync);
             StartCoroutine(PlayBellDings(2, 0.25f, crowdStartCheer, sync));
         }
+    }
+
+    private void SetAttackSequence(int sequenceIndex, bool sync = true)
+    {
+        SetAttackSequenceLocal(sequenceIndex);
+        if (IsOwner && sync)
+        {
+            SetAttackSequenceServerRpc(sequenceIndex, (int)GameNetworkManager.Instance.localPlayerController.playerClientId);
+        }
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void SetAttackSequenceServerRpc(int sequenceIndex, int sentBy)
+    {
+        SetAttackSequenceClientRpc(sequenceIndex, sentBy);
+    }
+
+    [ClientRpc]
+    private void SetAttackSequenceClientRpc(int sequenceIndex, int sentBy)
+    {
+        if (sentBy != (int)GameNetworkManager.Instance.localPlayerController.playerClientId)
+        {
+            SetAttackSequenceLocal(sequenceIndex);
+        }
+    }
+
+    private void SetAttackSequenceLocal(int sequenceIndex)
+    {
+        Log($"ATTACK SEQUENCE - SWITCH!!", 3);
+        timeLastCollisionLocalPlayer = Time.realtimeSinceStartup + 1;
+        currentAttackSequence = allAttackSequences[sequenceIndex];
+        SyncAttackAnimation(-1, false, true);
+        SetAnimation("Intimidate", false);
+        StartCoroutine(PlayBellDings(2, 0.15f, crowdStartCheer));
     }
 
     [ServerRpc(RequireOwnership = false)]
@@ -1856,7 +2420,7 @@ public class TheBoxerAI : EnemyAI
     {
         bool setEnemyLight = lightToSet == enemySpotlight;
         SetSpotlightLocal(setEnemyLight, enableLight);
-        if (sync)
+        if (sync && IsOwner)
         {
             SetSpotlightServerRpc((int)GameNetworkManager.Instance.localPlayerController.playerClientId, setEnemyLight, enableLight);
         }
@@ -1879,7 +2443,7 @@ public class TheBoxerAI : EnemyAI
 
     private void SetSpotlightLocal(bool setEnemyLight, bool enableLight = true)
     {
-        Light lightToSet = setEnemyLight ? enemySpotlight : playerSpotlight;
+        Light lightToSet = setEnemyLight ? enemySpotlight : targetSpotlight;
         if (lightToSet == null)
         {
             return;
@@ -1895,7 +2459,7 @@ public class TheBoxerAI : EnemyAI
     public void SetAnimation(string animString = null, bool sync = true, bool boolAnim = false, bool boolVal = true, string paramString = null, float paramFloat = 1.0f)
     {
         SetAnimationLocal(animString, boolAnim, boolVal, paramString, paramFloat);
-        if (sync)
+        if (sync && IsOwner)
         {
             SetAnimationServerRpc((int)GameNetworkManager.Instance.localPlayerController.playerClientId, animString, boolAnim, boolVal, paramString, paramFloat);
         }
@@ -1918,6 +2482,10 @@ public class TheBoxerAI : EnemyAI
 
     private void SetAnimationLocal(string animString, bool boolAnim, bool boolVal, string paramString, float paramFloat)
     {
+        if (isEnemyDead)
+        {
+            return;
+        }
         if (boolAnim)
         {
             if (!string.IsNullOrEmpty(animString))
@@ -1943,31 +2511,26 @@ public class TheBoxerAI : EnemyAI
 
     private void UpdateAnimStateInt(string animString, bool boolVal = true)
     {
+        int setTo = GetIntOfAnimState(animString, boolVal);
+        if (setTo != -1 && setTo != animState)
+        {
+            animState = setTo;
+            LogAI($"UpdateAnimStateInt({animString}) successfully updated to {animState}");
+        }
+    }
+
+    private int GetIntOfAnimState(string animString, bool boolVal = true, bool printDebug = true)
+    {
         int setTo = -1;
         switch (animString)
         {
-            default:
-                if (animString.StartsWith("Boxer"))
-                {
-                    setTo = 2;
-                }
-                break;
             case "Sitting":
                 setTo = 0;
                 break;
             case "Hunched":
                 setTo = 1;
                 break;
-            case "Upright":
-                setTo = 2;
-                break;
-            case "GiveShovel":
-                setTo = 2;
-                break;
-            case "GrabItem":
-                setTo = 2;
-                break;
-            case "Block":
+            default:
                 setTo = 2;
                 break;
             case "WaveGoodbye":
@@ -1977,11 +2540,11 @@ public class TheBoxerAI : EnemyAI
                 setTo = boolVal ? 4 : 2;
                 break;
         }
-        if (setTo != -1 && setTo != animState)
+        if (printDebug)
         {
-            animState = setTo;
-            LogAI($"UpdateAnimStateInt({animString}) successfully updated to {animState}");
+            LogAI($"GetIntOfAnimState returned {setTo}");
         }
+        return setTo;
     }
 
     public void PlaySFX(AudioClip clipToPlay = null, bool audibleNoise = true, bool isAudience = false, bool sync = true, int clipCase = -1)
@@ -1991,7 +2554,7 @@ public class TheBoxerAI : EnemyAI
             clipToPlay = GetClipOfInt(clipCase);
         }
         PlaySFXLocal(clipToPlay, audibleNoise, isAudience);
-        if (sync)
+        if (sync && IsOwner)
         {
             PlaySFXServerRpc((int)GameNetworkManager.Instance.localPlayerController.playerClientId, GetIntOfClip(clipToPlay), audibleNoise, isAudience);
         }
@@ -2028,7 +2591,7 @@ public class TheBoxerAI : EnemyAI
         WalkieTalkie.TransmitOneShotAudio(sourceToPlay, clipToPlay);
         if (audibleNoise)
         {
-            RoundManager.Instance.PlayAudibleNoise(transform.position, 20);
+            RoundManager.Instance.PlayAudibleNoise(transform.position, 20, noiseID: 202252);
         }
     }
 
@@ -2116,12 +2679,22 @@ public class TheBoxerAI : EnemyAI
         targetPlayer = player;
         timeLastSwitchingTarget = Time.realtimeSinceStartup;
         Log($"targetPlayer = {targetPlayer}");
+        bool prioritize = GetTargetPriority();
+        if (targetPlayer != null && (currentTarget == null || targetEnemy == null || prioritize))
+        {
+            currentTarget = targetPlayer.gameObject;
+            Log($"prioritize? {prioritize} | currentTarget = {currentTarget}");
+        }
     }
 
     private void SetTargetEnemy(EnemyAI enemy, bool sync = true)
     {
+        if (Time.realtimeSinceStartup - timeLastSwitchingTarget < minTargetFocusTime)
+        {
+            return;
+        }
         SetTargetEnemyLocal(enemy);
-        if (sync)
+        if (sync && IsOwner)
         {
             if (enemy != null)
             {
@@ -2179,6 +2752,12 @@ public class TheBoxerAI : EnemyAI
     {
         targetEnemy = enemy;
         Log($"targetEnemy = {targetEnemy}");
+        bool prioritize = GetTargetPriority(false);
+        if (targetEnemy != null && (currentTarget == null || targetPlayer == null || prioritize))
+        {
+            currentTarget = targetEnemy.gameObject;
+            Log($"prioritize? {prioritize} | currentTarget = {currentTarget}");
+        }
     }
 
     private void OnDisable()
@@ -2199,16 +2778,83 @@ public class TheBoxerAI : EnemyAI
         }
     }
 
+    int IVisibleThreat.GetThreatLevel(Vector3 seenByPosition)
+    {
+        switch (currentBehaviourStateIndex)
+        {
+            default:
+                return 5;
+            case 1:
+                return 0;
+            case 2:
+                return 10;
+        }
+    }
+
+    int IVisibleThreat.GetInterestLevel()
+    {
+        switch (currentBehaviourStateIndex)
+        {
+            default:
+                return 0;
+            case 1:
+                return 1;
+            case 2:
+                return 2;
+        }
+    }
+
+    Transform IVisibleThreat.GetThreatLookTransform()
+    {
+        return eye;
+    }
+
+    Transform IVisibleThreat.GetThreatTransform()
+    {
+        return transform;
+    }
+
+    Vector3 IVisibleThreat.GetThreatVelocity()
+    {
+        if (IsOwner)
+        {
+            return agent.velocity;
+        }
+        return Vector3.zero;
+    }
+
+    float IVisibleThreat.GetVisibility()
+    {
+        if (isEnemyDead)
+        {
+            return 0f;
+        }
+        if (animState == GetIntOfAnimState("Upright") || animState == GetIntOfAnimState("Stunned", true))
+        {
+            return 1f;
+        }
+        if (animState == GetIntOfAnimState("Hunched"))
+        {
+            return 0.75f;
+        }
+        return 0.5f;
+    }
+
+    int IVisibleThreat.SendSpecialBehaviour(int id)
+    {
+        return 0;
+    }
+
     //Useful for once-off information that needs to be distuinguishable in the debug log
     private void Log(string message, int type = 0)
     {
-        if (!DebugEnemy)
+        if (debugLogLevel < 1)
         {
             return;
         }
         switch (type)
         {
-            case 0:
+            default:
                 Logger.LogDebug(message);
                 return;
             case 1:
@@ -2226,13 +2872,13 @@ public class TheBoxerAI : EnemyAI
     //For printing every individual step of the enemy, similarly to its currentSearch coroutine on DoAIInterval
     private void LogAI(string message, int type = 0)
     {
-        if (!debugEnemyAI)
+        if (debugLogLevel < 2)
         {
             return;
         }
         switch (type)
         {
-            case 0:
+            default:
                 Logger.LogDebug(message);
                 return;
             case 1:

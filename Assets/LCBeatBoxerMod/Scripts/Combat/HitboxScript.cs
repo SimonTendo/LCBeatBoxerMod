@@ -15,11 +15,17 @@ public class HitboxScript : MonoBehaviour
     [Space(3f)]
     [Header("Hitbox")]
     public Collider hitboxCollider;
+    public HitboxScript managerHitbox;
+    [Space]
     public int attackPower;
     public Vector3 attackForce;
     public int deathAnimIndex;
-    public HitboxScript managerHitbox;
+    [Space]
+    public bool canHitPlayers;
+    public bool canHitEnemies;
+
     private List<int> hitPlayerIDs = new List<int>();
+    private List<int> hitEnemyIDs = new List<int>();
 
     private void Start()
     {
@@ -53,38 +59,67 @@ public class HitboxScript : MonoBehaviour
 
     private void PerformAttackOnHitbox(Collider other)
     {
-        if (other.CompareTag("Player"))
+        if (canHitPlayers && other.CompareTag("Player"))
         {
             PlayerControllerB hitPlayer = other.GetComponent<PlayerControllerB>();
             if (PerformHitPlayerCheck(hitPlayer) && hitPlayer == GameNetworkManager.Instance.localPlayerController)
             {
-                Log($"{name} PerformAttack({other}) // hitPlayer: {hitPlayer} | attackPower {attackPower} | attackForce {attackForce}");
+                Log($"{name} PerformAttack({other}) // hitPlayer: {hitPlayer} | attackPower {attackPower} | attackForce {attackForce} | deathAnimIndex {deathAnimIndex}");
                 Transform mainTransform = mainScript != null ? mainScript.transform : transform;
                 Vector3 attackForceWithDirection = new Vector3(mainTransform.forward.x * attackForce.z, attackForce.y, mainTransform.forward.z * attackForce.x); 
                 if (attackPower > 0)
                 {
                     hitPlayer.DamagePlayer(attackPower, true, true, CauseOfDeath.Mauling, deathAnimIndex, false, attackForceWithDirection);
-                }
-                if (hitPlayer.isPlayerDead)
-                {
                     if (mainScript == null)
                     {
                         Log($"mainScript on hitbox {name} is null, cannot call enemy-dependent functionality", 2);
-                        return;
                     }
-                    if (mainScript is TheBeatAI)
+                    else
                     {
-                        TheBeatAI beatEnemy = mainScript as TheBeatAI;
-                    }
-                    else if (mainScript is TheBoxerAI)
-                    {
-                        TheBoxerAI boxerEnemy = mainScript as TheBoxerAI;
-                        boxerEnemy.PlaySFX(boxerEnemy.punchSFX);
+                        if (mainScript is TheBeatAI)
+                        {
+                            TheBeatAI beatEnemy = mainScript as TheBeatAI;
+                        }
+                        else if (mainScript is TheBoxerAI)
+                        {
+                            TheBoxerAI boxerEnemy = mainScript as TheBoxerAI;
+                            boxerEnemy.PlaySFX(boxerEnemy.punchSFX);
+                        }
                     }
                 }
-                else
+                if (!hitPlayer.isPlayerDead)
                 {
                     hitPlayer.externalForceAutoFade = attackForceWithDirection * 2;
+                }
+            }
+        }
+        else if (attackPower > 0 && canHitEnemies && other.CompareTag("Enemy"))
+        {
+            EnemyAICollisionDetect hitEnemy = other.GetComponent<EnemyAICollisionDetect>();
+            if (PerformHitEnemyCheck(hitEnemy) && mainScript.IsOwner)
+            {
+                int enemyAttackPower = attackPower / 10;
+                Log($"{name} PerformAttack({other}) // hitEnemy: {hitEnemy.mainScript} | enemyAttackPower {enemyAttackPower}");
+                Transform mainTransform = mainScript != null ? mainScript.transform : transform;
+                if (enemyAttackPower > 0)
+                {
+                    hitEnemy.mainScript.HitEnemyOnLocalClient(enemyAttackPower, playHitSFX: true);
+                    if (mainScript == null)
+                    {
+                        Log($"mainScript on hitbox {name} is null, cannot call enemy-dependent functionality", 2);
+                    }
+                    else
+                    {
+                        if (mainScript is TheBeatAI)
+                        {
+                            TheBeatAI beatEnemy = mainScript as TheBeatAI;
+                        }
+                        else if (mainScript is TheBoxerAI)
+                        {
+                            TheBoxerAI boxerEnemy = mainScript as TheBoxerAI;
+                            boxerEnemy.PlaySFX(boxerEnemy.punchSFX);
+                        }
+                    }
                 }
             }
         }
@@ -108,6 +143,31 @@ public class HitboxScript : MonoBehaviour
             }
         }
         return flag;
+    }
+
+    private bool PerformHitEnemyCheck(EnemyAICollisionDetect hitEnemy)
+    {
+        if (mainScript == null || hitEnemy == null || hitEnemy.mainScript == null)
+        {
+            return false;
+        }
+        EnemyAI enemy = hitEnemy.mainScript;
+        if (mainScript == enemy || enemy.isEnemyDead || mainScript.isOutside != enemy.isOutside)
+        {
+            return false;
+        }
+        int enemyID = Plugin.GetEnemyIndexInRoundManager(enemy);
+        bool flag3 = !hitEnemyIDs.Contains(enemyID);
+        if (flag3)
+        {
+            hitEnemyIDs.Add(enemyID);
+            bool flag4 = !managerHitbox.hitEnemyIDs.Contains(enemyID);
+            if (flag4)
+            {
+                managerHitbox.hitEnemyIDs.Add(enemyID);
+            }
+        }
+        return flag3;
     }
 
     public void SetEnemyVulnerable(string setVulnerableTo)
@@ -140,7 +200,7 @@ public class HitboxScript : MonoBehaviour
             return;
         }
         bool setTo = Plugin.ConvertToBool(setInSpecialAnimationTo);
-        LogAI($"{name}: PlayEnemyInSpecialAnimTo({setTo}) on {mainScript} #{mainScript.NetworkObjectId}");
+        LogAI($"{name}: SetEnemyInSpecialAnimTo({setTo}) on {mainScript} #{mainScript.NetworkObjectId}");
         if (mainScript is TheBeatAI)
         {
             TheBeatAI beatEnemy = mainScript as TheBeatAI;
@@ -162,10 +222,12 @@ public class HitboxScript : MonoBehaviour
         }
         Log($"{name}: OnAttackStart()");
         managerHitbox.hitPlayerIDs.Clear();
+        managerHitbox.hitEnemyIDs.Clear();
         foreach (HitboxScript hitbox in allHitboxes)
         {
-            LogAI($"clearing hitPlayerIDs on {hitbox}");
+            LogAI($"clearing hitIDs on {hitbox}");
             hitbox.hitPlayerIDs.Clear();
+            hitbox.hitEnemyIDs.Clear();
         }
     }
 
@@ -252,8 +314,10 @@ public class HitboxScript : MonoBehaviour
                     break;
                 case 3:
                     mainScript.enemyType.canBeStunned = false;
-                    StunGrenadeItem.StunExplosion(mainScript.transform.position, true, 1, 5);
+                    StunGrenadeItem.StunExplosion(mainScript.transform.position, true, 1, 7.5f);
                     mainScript.enemyType.canBeStunned = true;
+                    break;
+                case 4:
                     PlayerControllerB player = StartOfRound.Instance.localPlayerController;
                     if (!player.isPlayerControlled || player.isInsideFactory || player.inAnimationWithEnemy != null)
                     {
@@ -264,7 +328,7 @@ public class HitboxScript : MonoBehaviour
                     {
                         break;
                     }
-                    Vector3 forceToHit = mainScript.eye.forward * (distanceFromEnemy / 1.5f) + Vector3.up * 25;
+                    Vector3 forceToHit = mainScript.eye.forward * (distanceFromEnemy / 1.33f) + Vector3.up * 33;
                     if (distanceFromEnemy < 2)
                     {
                         player.DamagePlayer(10, true, true, CauseOfDeath.Blast, 0, false, forceToHit);
@@ -300,16 +364,21 @@ public class HitboxScript : MonoBehaviour
             TheBoxerAI boxerEnemy = mainScript as TheBoxerAI;
             if (boxerEnemy != null && boxerEnemy.IsOwner)
             {
-                Log($"{boxerEnemy} hit {managerHitbox.hitPlayerIDs.Count}", 1);
+                Log($"{boxerEnemy} hit {managerHitbox.hitPlayerIDs.Count} PLAYERS and {managerHitbox.hitEnemyIDs.Count} ENEMIES", 1);
                 if (managerHitbox.hitPlayerIDs.Count != 0)
                 {
-                    hitSuccessful = boxerEnemy.OnHitSuccessful(managerHitbox.hitPlayerIDs.ToArray());
+                    hitSuccessful = boxerEnemy.OnHitSuccessful(managerHitbox.hitPlayerIDs.ToArray(), true);
+                }
+                if (!hitSuccessful && hitEnemyIDs.Count != 0)
+                {
+                    hitSuccessful = boxerEnemy.OnHitSuccessful(managerHitbox.hitEnemyIDs.ToArray(), false);
                 }
             }
         }
         if (hitSuccessful)
         {
             managerHitbox.hitPlayerIDs.Clear();
+            managerHitbox.hitEnemyIDs.Clear();
         }
     }
 
@@ -340,16 +409,21 @@ public class HitboxScript : MonoBehaviour
             TheBoxerAI boxerEnemy = enemyScript as TheBoxerAI;
             if (boxerEnemy != null && boxerEnemy.IsOwner)
             {
-                Log($"{boxerEnemy} hit {hitPlayerIDs.Count}", 1);
+                Log($"{boxerEnemy} hit {hitPlayerIDs.Count} PLAYERS and {hitEnemyIDs.Count} ENEMIES", 1);
                 if (hitPlayerIDs.Count != 0)
                 {
-                    hitSuccessful = boxerEnemy.OnHitSuccessful(hitPlayerIDs.ToArray());
+                    hitSuccessful = boxerEnemy.OnHitSuccessful(hitPlayerIDs.ToArray(), true);
+                }
+                if (!hitSuccessful && hitEnemyIDs.Count != 0)
+                {
+                    hitSuccessful = boxerEnemy.OnHitSuccessful(hitEnemyIDs.ToArray(), false);
                 }
             }
         }
         if (hitSuccessful)
         {
             hitPlayerIDs.Clear();
+            hitEnemyIDs.Clear();
         }
     }
 

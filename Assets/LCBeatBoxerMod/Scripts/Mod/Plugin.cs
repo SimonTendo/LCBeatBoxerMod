@@ -7,7 +7,7 @@ using BepInEx.Logging;
 using HarmonyLib;
 using HarmonyLib.Tools;
 
-[BepInPlugin("com.github.SimonTendo.LCBeatBoxerMod", "LCBeatBoxerMod", "0.3.0")]
+[BepInPlugin("com.github.SimonTendo.LCBeatBoxerMod", "LCBeatBoxerMod", "0.3.1")]
 public class Plugin : BaseUnityPlugin
 {
     internal new static ManualLogSource Logger;

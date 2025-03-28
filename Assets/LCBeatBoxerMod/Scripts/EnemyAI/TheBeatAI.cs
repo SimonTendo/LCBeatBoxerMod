@@ -37,6 +37,7 @@ public class TheBeatAI : EnemyAI
     public AISearchRoutine roamingSearch;
     public AISearchRoutine investigateSearch;
     [Tooltip("Low numbers are closer to the enemy transform, high numbers are closer to the point it finds for players/entrances.")]
+    [Range(0.0f, 1.0f)]
     public float lerpMidpoint;
 
     [Space(3f)]

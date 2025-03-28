@@ -2090,7 +2090,7 @@ MonoBehaviour:
     waitingForTargetNode: 0
     choseTargetNode: 0
     currentSearchStartPosition: {x: 0, y: 0, z: 0}
-    loopSearch: 1
+    loopSearch: 0
     timesFinishingSearch: 0
     nodesEliminatedInCurrentSearch: 0
     inProgress: 0

@@ -136,7 +136,7 @@ public class TheBoxerAI : EnemyAI, IVisibleThreat
     [Space(3f)]
     [Header("DEBUG")]
     public GameObject debugNestPrefab;
-    public static GameObject nestObject;
+    public static GameObject spawnedNest;
     public GameObject debugEyeForward;
     ThreatType IVisibleThreat.type => ThreatType.ForestGiant;
 
@@ -181,13 +181,13 @@ public class TheBoxerAI : EnemyAI, IVisibleThreat
             }
         }
         Log($"failed to find nest, creating new empty nest at current position", 3);
-        if (nestObject == null)
+        if (spawnedNest == null)
         {
             debugNestPrefab.transform.SetParent(RoundManager.Instance.spawnedScrapContainer);
-            nestObject = debugNestPrefab;
+            spawnedNest = debugNestPrefab;
         }
-        nestObject.transform.position = transform.position;
-        return nestObject.transform;
+        spawnedNest.transform.position = transform.position;
+        return spawnedNest.transform;
     }
 
     public override void Update()
@@ -242,7 +242,7 @@ public class TheBoxerAI : EnemyAI, IVisibleThreat
         headIK.weight = Mathf.Lerp(headIK.weight, headTargetWeight, 0.1f);
         if (headIK.weight > 0.1f && targetNode != null)
         {
-            headTarget.position = Vector3.Lerp(headTarget.position, targetNode.position, 0.075f); 
+            headTarget.position = Vector3.Lerp(headTarget.position, targetNode.position, 0.075f);
         }
         useSecondaryAudiosOnAnimatedObjects = currentBehaviourStateIndex == 2;
         switch (currentBehaviourStateIndex)
@@ -446,7 +446,7 @@ public class TheBoxerAI : EnemyAI, IVisibleThreat
                         SetTargetEnemy(targetPlayer.inAnimationWithEnemy);
                         break;
                     }
-                    timeLastSeeingTarget = Time.realtimeSinceStartup; 
+                    timeLastSeeingTarget = Time.realtimeSinceStartup;
                     float distanceToEnemy = Vector3.Distance(transform.position, targetEnemy.transform.position);
                     if (distanceToEnemy < collisionDistanceEnemies)
                     {
@@ -673,7 +673,7 @@ public class TheBoxerAI : EnemyAI, IVisibleThreat
                     }
                 }
                 break;
-            }
+        }
         heldShovelLastInterval = GetHoldingShovel();
     }
 
@@ -1119,7 +1119,7 @@ public class TheBoxerAI : EnemyAI, IVisibleThreat
             {
                 return null;
             }
-            Log($"Getting spawnedEnemies from RoundManager in GetEnemyTargetingPlayer()"); 
+            Log($"Getting spawnedEnemies from RoundManager in GetEnemyTargetingPlayer()");
             seenEnemies = RoundManager.Instance.SpawnedEnemies.ToArray();
         }
         seenEnemies = GetFightableEnemies(seenEnemies);
@@ -1155,10 +1155,10 @@ public class TheBoxerAI : EnemyAI, IVisibleThreat
             {
                 return null;
             }
-            Log($"Getting spawnedEnemies from RoundManager in GetEnemyTargetingPlayer()"); 
+            Log($"Getting spawnedEnemies from RoundManager in GetEnemyTargetingPlayer()");
             seenEnemies = RoundManager.Instance.SpawnedEnemies.ToArray();
         }
-        seenEnemies = GetFightableEnemies(seenEnemies); 
+        seenEnemies = GetFightableEnemies(seenEnemies);
         EnemyAI result = null;
         float highestThreat = 0.0f;
         for (int i = 0; i < seenEnemies.Length; i++)
@@ -1220,7 +1220,7 @@ public class TheBoxerAI : EnemyAI, IVisibleThreat
             Log($"Getting spawnedEnemies from RoundManager in GetEnemyTargetingPlayer()");
             seenEnemies = RoundManager.Instance.SpawnedEnemies.ToArray();
         }
-        seenEnemies = GetFightableEnemies(seenEnemies); 
+        seenEnemies = GetFightableEnemies(seenEnemies);
         EnemyAI result = null;
         List<EnemyAI> enemiesTargetingPlayer = new List<EnemyAI>();
         for (int i = 0; i < seenEnemies.Length; i++)
@@ -1682,7 +1682,7 @@ public class TheBoxerAI : EnemyAI, IVisibleThreat
     private void DetectNewSighting(Vector3 lookPos, bool lookImmediately = false)
     {
         timeLastTurningTo = Time.realtimeSinceStartup;
-        turnTo = lookPos; 
+        turnTo = lookPos;
         if (lookImmediately)
         {
             turnCompass.LookAt(lookPos);
@@ -1917,7 +1917,7 @@ public class TheBoxerAI : EnemyAI, IVisibleThreat
         {
             return;
         }
-        timeLastCollisionLocalPlayer = Time.realtimeSinceStartup; 
+        timeLastCollisionLocalPlayer = Time.realtimeSinceStartup;
         switch (currentBehaviourStateIndex)
         {
             case 0:
@@ -2252,7 +2252,7 @@ public class TheBoxerAI : EnemyAI, IVisibleThreat
             return;
         }
         StartCoroutine(GiveShovelLocal(collidedPlayer));
-        
+
     }
 
     private IEnumerator GiveShovelLocal(PlayerControllerB giveToPlayer)
@@ -2502,7 +2502,7 @@ public class TheBoxerAI : EnemyAI, IVisibleThreat
                 UpdateAnimStateInt(animString);
             }
         }
-        
+
         if (!string.IsNullOrEmpty(paramString))
         {
             creatureAnimator.SetFloat(paramString, paramFloat);
@@ -2843,6 +2843,16 @@ public class TheBoxerAI : EnemyAI, IVisibleThreat
     int IVisibleThreat.SendSpecialBehaviour(int id)
     {
         return 0;
+    }
+
+    GrabbableObject IVisibleThreat.GetHeldObject()
+    {
+        return heldShovel;
+    }
+
+    bool IVisibleThreat.IsThreatDead()
+    {
+        return isEnemyDead;
     }
 
     //Useful for once-off information that needs to be distuinguishable in the debug log
